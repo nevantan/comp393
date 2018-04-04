@@ -57,11 +57,6 @@ int main(int argc, char **argv) {
   GLuint MatrixID = glGetUniformLocation(programID, "MVP");
 
   // Draw Triangle
-  static const GLfloat g_vertex_buffer_data[] = {
-    -1.0f, -1.0f, 0.0f,
-    1.0f, -1.0f, 0.0f,
-    0.0f, 1.0f, 0.0f
-  };
   GLuint vertexbuffer;
   glGenBuffers(1, &vertexbuffer);
   glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
@@ -81,7 +76,7 @@ int main(int argc, char **argv) {
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawArrays(GL_TRIANGLES, 0, 12*3);
     glDisableVertexAttribArray(0);
 
     glfwSwapBuffers(window);
