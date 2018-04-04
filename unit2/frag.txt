@@ -1,0 +1,73 @@
+// Image
+
+
+
+uniform sampler2D TurnerVagour;
+
+uniform sampler2D Welcome393;
+
+
+
+// general
+
+varying float LightIntensity;
+
+
+
+// texture coordinates
+
+varying vec2  TexCoord0, TexCoord1;
+
+varying float x_coord;
+
+
+
+const float DiffuseContribution = 0.5;
+
+const float SpecularContribution = 1.0 - DiffuseContribution;
+
+
+
+
+
+
+
+  void main()
+
+  {
+
+    vec3 c1 = vec3(texture2D(Welcome393, TexCoord1.xy));
+
+    vec3 c2 = vec3(texture2D(TurnerVagour, TexCoord0.xy));
+
+    vec3 c  = vec3(0.0, 0.0, 0.0);
+
+
+
+    if (x_coord < -0.5) {
+
+      c = c2;
+
+    }
+
+    else if (x_coord > 0.5) {
+
+      c = c1;
+
+    }
+
+    else {
+
+      c = mix(c2, c1, (x_coord + 0.5));
+
+    }
+
+
+
+
+
+    gl_FragColor = vec4(c, 1.0);
+
+
+
+  }

@@ -1,0 +1,33 @@
+// general LightIntensity
+
+varying float LightIntensity;
+
+
+
+// Texture coordinate
+
+varying vec2  TexCoord0, TexCoord1;
+
+varying float x_coord;
+
+
+
+
+
+void main() {
+
+
+
+    LightIntensity = 1.0;
+
+    TexCoord0  = gl_MultiTexCoord0.st;
+
+    TexCoord1  = gl_MultiTexCoord1.st;
+
+    x_coord    = gl_Vertex.x;
+
+
+
+    gl_Position = ftransform();
+
+}
