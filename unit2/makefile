@@ -1,4 +1,4 @@
-all: main
+all: main clean
 
 main: main.o GLShader.o
 	g++ main.o GLShader.o -L/usr/lib -lGLEW -lglfw -lGL -o ./bin/shaders
