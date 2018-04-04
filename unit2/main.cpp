@@ -1,4 +1,5 @@
 #include "GLShader.h"
+#include "./lib/SOIL/SOIL.h"
 #include <iostream>
 using namespace std;
 using namespace glm;
@@ -47,7 +48,7 @@ int main(int argc, char **argv) {
   // Setup MVP matrix
   mat4 Projection = perspective(radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
   mat4 View = lookAt(
-    vec3(4, 3, 3), // Camera a (4, 3, 3) world
+    vec3(4, 3, -3), // Camera a (4, 3, 3) world
     vec3(0, 0, 0), // Looking at origin
     vec3(0, 1, 0)  // Head is up
   );
@@ -62,6 +63,28 @@ int main(int argc, char **argv) {
   glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
   glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
 
+  // Load Texture
+  int iwidth = 256, iheight = 256;
+  unsigned char* image = SOIL_load_image("crate.bmp", &iwidth, &iheight, 0, SOIL_LOAD_RGB);
+  GLuint Texture;
+  glGenTextures(1, &Texture);
+  glBindTexture(GL_TEXTURE_2D, Texture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, iwidth, iheight, 0, GL_BGR, GL_UNSIGNED_BYTE, image);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+  GLuint TextureID = glGetUniformLocation(programID, "myTextureSampler");
+
+  // Set Triangle Texture
+  GLuint texturebuffer;
+  glGenBuffers(1, &texturebuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, texturebuffer);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(g_uv_buffer_data), g_uv_buffer_data, GL_STATIC_DRAW);
+
+  // Enable depth test
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+
   // Setup input
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
@@ -73,11 +96,22 @@ int main(int argc, char **argv) {
     glUseProgram(programID);
     glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &mvp[0][0]);
 
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, Texture);
+    glUniform1i(TextureID, 0);
+
     glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-    glDrawArrays(GL_TRIANGLES, 0, 12*3);
+      glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+    glEnableVertexAttribArray(1);
+      glBindBuffer(GL_ARRAY_BUFFER, texturebuffer);
+      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+      glDrawArrays(GL_TRIANGLES, 0, 12*3);
+
     glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
