@@ -1,9 +1,38 @@
 // Athabasca University
 // Unit 5 Assignment 1
 
-#include "GL/glut.h"
+#include "shader.h"
+
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <iostream>
+using namespace std;
+
+GLFWwindow* window;
+GLuint vertexbuffer;
+
+void initScene() {
+  static const GLfloat g_vertex_buffer_data[] = {
+    -8.0, -6.0, 0.0, // Wall 1
+    -8.0, 3.0, 0.0,
+    8.0, 3.0, 0.0,
+    8.0, 3.0, 0.0,
+    8.0, -6.0, 0.0,
+    -8.0, -6.0, 0.0
+  };
+
+  glGenBuffers(1, &vertexbuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+}
 
 void initialize(int argc, char * argv[]) {
+  glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
+
+  GLuint VertexArrayID;
+  glGenVertexArrays(1, &VertexArrayID);
+  glBindVertexArray(VertexArrayID);
+  initScene();
 
   // set background color
   glClearColor(0.3, 0.3, 0.7, 0.0);
@@ -13,7 +42,6 @@ void initialize(int argc, char * argv[]) {
 }
 
 void drawPicture() {
-
   glColor3f(1.0, 1.0, 1.0);
 
   // wall 1
@@ -69,15 +97,21 @@ void drawPicture() {
   glEnd();
 }
 
-void display(void) {
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glLoadIdentity();
+void drawScene() {
+  glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    glVertexAttribPointer(0, 6, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+  glDisableVertexAttribArray(0);
+}
 
-  gluLookAt(-3.0, 0.0, 15.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+void render() {
+  do {
+    drawScene();
 
-  drawPicture();
-
-  glutSwapBuffers();
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+  } while(glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0);
 }
 
 void reshape(int w, int h) {
@@ -90,20 +124,34 @@ void reshape(int w, int h) {
 
 int main(int argc, char * argv[])
 {
-  glutInit( &argc, argv );
-  glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH) ;
-  glutInitWindowSize(500, 500);
-  glutInitWindowPosition(100, 100);
+  if(!glfwInit()) {
+    cerr << "Failed to initialize GLFW\n" << endl;
+    return -1;
+  }
 
-  int windowHandle = glutCreateWindow("Comp393 U5 Assignment 1");
-  glutSetWindow(windowHandle);
+  glfwWindowHint(GLFW_SAMPLES, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  glutDisplayFunc( display );
-  glutReshapeFunc( reshape );
+  window = glfwCreateWindow(500, 500, "COMP393 Assignment 1", NULL, NULL);
+  if(window == NULL) {
+    cerr << "Failed to open GLFW window." << endl;
+    glfwTerminate();
+    return -1;
+  }
+  glfwMakeContextCurrent(window);
+
+  glewExperimental = true;
+  if(glewInit() != GLEW_OK) {
+    cerr << "Failed to initialize GLEW" << endl;
+    return -1;
+  }
 
   initialize(argc, argv);
 
-  glutMainLoop();
+  render();
 
   return 0;
 }
