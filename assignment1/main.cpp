@@ -3,12 +3,15 @@
 
 #include "shader.h"
 
+#include <iostream>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <iostream>
+#include <glm/glm.hpp>
 using namespace std;
+using namespace glm;
 
 GLFWwindow* window;
+GLuint programID;
 GLuint vertexbuffer;
 
 void initScene() {
@@ -29,6 +32,8 @@ void initScene() {
 void initialize(int argc, char * argv[]) {
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
+  programID = Shader("shaders/vertex.glsl", "shaders/fragment.glsl").Program();
+
   GLuint VertexArrayID;
   glGenVertexArrays(1, &VertexArrayID);
   glBindVertexArray(VertexArrayID);
@@ -39,6 +44,14 @@ void initialize(int argc, char * argv[]) {
 
   // enable depth test
   glEnable(GL_DEPTH_TEST);
+}
+
+void drawScene() {
+  glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    glVertexAttribPointer(0, 6, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+  glDisableVertexAttribArray(0);
 }
 
 void drawPicture() {
@@ -97,16 +110,13 @@ void drawPicture() {
   glEnd();
 }
 
-void drawScene() {
-  glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    glVertexAttribPointer(0, 6, GL_FLOAT, GL_FALSE, 0, (void*)0);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-  glDisableVertexAttribArray(0);
-}
-
 void render() {
   do {
+    glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(programID);
+
     drawScene();
 
     glfwSwapBuffers(window);
