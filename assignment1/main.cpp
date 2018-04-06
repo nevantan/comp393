@@ -13,13 +13,15 @@ using namespace glm;
 
 int width, height;
 GLFWwindow* window;
-GLuint programID;
+GLuint brickProgram;
+GLuint woodProgram;
 
 GLuint vertexbuffer;
 GLuint colorbuffer;
 
 mat4 mvp;
-GLuint MatrixID;
+GLuint brickMVP;
+GLuint woodMVP;
 
 mat4 initCamera() {
   mat4 Projection = perspective(radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
@@ -123,10 +125,12 @@ void initScene() {
 void initialize(int argc, char * argv[]) {
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
-  programID = Shader("shaders/vertex.glsl", "shaders/fragment.glsl").Program();
+  brickProgram = Shader("shaders/brick/vertex.glsl", "shaders/brick/fragment.glsl").Program();
+  woodProgram = Shader("shaders/wood/vertex.glsl", "shaders/wood/fragment.glsl").Program();
 
   mvp = initCamera();
-  MatrixID = glGetUniformLocation(programID, "MVP");
+  brickMVP = glGetUniformLocation(brickProgram, "MVP");
+  woodMVP = glGetUniformLocation(brickProgram, "MVP");
 
   GLuint VertexArrayID;
   glGenVertexArrays(1, &VertexArrayID);
@@ -144,22 +148,20 @@ void drawScene() {
   glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-  glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
-    glDrawArrays(GL_TRIANGLES, 0, 12*3);
+    glUseProgram(brickProgram);
+      glUniformMatrix4fv(brickMVP, 1, GL_FALSE, &mvp[0][0]);
+      glDrawArrays(GL_TRIANGLES, 0, 4*3);
 
+    glUseProgram(woodProgram);
+      glUniformMatrix4fv(woodMVP, 1, GL_FALSE, &mvp[0][0]);
+      glDrawArrays(GL_TRIANGLES, 12, 6);
   glDisableVertexAttribArray(0);
-  glDisableVertexAttribArray(1);
 }
 
 void render() {
   do {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glUseProgram(programID);
-    glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &mvp[0][0]);
 
     drawScene();
 
