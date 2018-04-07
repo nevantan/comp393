@@ -8,7 +8,6 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
-#include <SOIL/SOIL.h>
 
 using namespace std;
 using namespace glm;
@@ -17,6 +16,7 @@ int width, height;
 GLFWwindow* window;
 GLuint brickProgram;
 GLuint woodProgram;
+GLuint pictureProgram;
 
 GLuint vertexbuffer;
 GLuint colorbuffer;
@@ -35,6 +35,10 @@ GLuint spacerColor;
 GLuint woodSize;
 GLuint woodPct;
 GLuint woodPlane;
+
+GLuint pictureMVP;
+
+GLuint starryNightTex;
 
 mat4 initCamera() {
   mat4 Projection = perspective(radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
@@ -97,8 +101,10 @@ void initialize(int argc, char * argv[]) {
 
   brickProgram = Shader("shaders/brick/vertex.glsl", "shaders/brick/fragment.glsl").Program();
   woodProgram = Shader("shaders/wood/vertex.glsl", "shaders/wood/fragment.glsl").Program();
+  pictureProgram = Shader("shaders/picture/vertex.glsl", "shaders/picture/fragment.glsl").Program();
 
   mvp = initCamera();
+
   brickMVP = glGetUniformLocation(brickProgram, "MVP");
   brickColor = glGetUniformLocation(brickProgram, "BrickColor");
   mortarColor = glGetUniformLocation(brickProgram, "MortarColor");
@@ -112,6 +118,8 @@ void initialize(int argc, char * argv[]) {
   woodSize = glGetUniformLocation(woodProgram, "WoodSize");
   woodPct = glGetUniformLocation(woodProgram, "WoodPct");
   woodPlane = glGetUniformLocation(woodProgram, "Plane");
+
+  pictureMVP = glGetUniformLocation(pictureProgram, "MVP");
 
   GLuint VertexArrayID;
   glGenVertexArrays(1, &VertexArrayID);
@@ -150,6 +158,11 @@ void drawScene() {
       glUniform2f(woodPct, 0.98f, 0.88f);
       glUniform3f(woodPlane, 1.0f, 0.0f, 1.0f);
       glDrawArrays(GL_TRIANGLES, 12, 6);
+
+    glUseProgram(pictureProgram);
+      glUniformMatrix4fv(pictureMVP, 1, GL_FALSE, &mvp[0][0]);
+      glDrawArrays(GL_TRIANGLES, 18, 18);
+
   glDisableVertexAttribArray(0);
 }
 
