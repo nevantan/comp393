@@ -8,6 +8,8 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
+#include <SOIL/SOIL.h>
+
 using namespace std;
 using namespace glm;
 
@@ -21,12 +23,23 @@ GLuint colorbuffer;
 
 mat4 mvp;
 GLuint brickMVP;
+GLuint brickColor;
+GLuint mortarColor;
+GLuint brickSize;
+GLuint brickPct;
+GLuint brickPlane;
+
 GLuint woodMVP;
+GLuint woodColor;
+GLuint spacerColor;
+GLuint woodSize;
+GLuint woodPct;
+GLuint woodPlane;
 
 mat4 initCamera() {
   mat4 Projection = perspective(radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
   mat4 View = lookAt(
-    vec3(-5.0f, 0.0f, 21.0f), // Pos
+    vec3(-5.0f, 5.0f, 21.0f), // Pos
     vec3(0.0f, 0.0f, 0.0f), // Look at
     vec3(0.0f, 1.0f, 0.0f)  // Up vector
   );
@@ -77,49 +90,6 @@ void initScene() {
   glGenBuffers(1, &vertexbuffer);
   glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
   glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
-
-  static const GLfloat g_color_buffer_data[] = {
-    0.3, 0.3, 0.3, // Wall 1
-    0.3, 0.3, 0.3,
-    0.3, 0.3, 0.3,
-    0.3, 0.3, 0.3,
-    0.3, 0.3, 0.3,
-    0.3, 0.3, 0.3,
-    0.4, 0.4, 0.4, // Wall 2
-    0.4, 0.4, 0.4,
-    0.4, 0.4, 0.4,
-    0.4, 0.4, 0.4,
-    0.4, 0.4, 0.4,
-    0.4, 0.4, 0.4,
-    0.5, 0.5, 0.2, // Floor
-    0.5, 0.5, 0.2,
-    0.5, 0.5, 0.2,
-    0.5, 0.5, 0.2,
-    0.5, 0.5, 0.2,
-    0.5, 0.5, 0.2,
-    0.2, 0.6, 0.2, // Frame 1
-    0.2, 0.6, 0.2,
-    0.2, 0.6, 0.2,
-    0.2, 0.6, 0.2,
-    0.2, 0.6, 0.2,
-    0.2, 0.6, 0.2,
-    0.2, 0.6, 0.2, // Frame 2
-    0.2, 0.6, 0.2,
-    0.2, 0.6, 0.2,
-    0.2, 0.6, 0.2,
-    0.2, 0.6, 0.2,
-    0.2, 0.6, 0.2,
-    0.2, 0.6, 0.2, // Frame 3
-    0.2, 0.6, 0.2,
-    0.2, 0.6, 0.2,
-    0.2, 0.6, 0.2,
-    0.2, 0.6, 0.2,
-    0.2, 0.6, 0.2
-  };
-
-  glGenBuffers(1, &colorbuffer);
-  glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(g_color_buffer_data), g_color_buffer_data, GL_STATIC_DRAW);
 }
 
 void initialize(int argc, char * argv[]) {
@@ -130,7 +100,18 @@ void initialize(int argc, char * argv[]) {
 
   mvp = initCamera();
   brickMVP = glGetUniformLocation(brickProgram, "MVP");
-  woodMVP = glGetUniformLocation(brickProgram, "MVP");
+  brickColor = glGetUniformLocation(brickProgram, "BrickColor");
+  mortarColor = glGetUniformLocation(brickProgram, "MortarColor");
+  brickSize = glGetUniformLocation(brickProgram, "BrickSize");
+  brickPct = glGetUniformLocation(brickProgram , "BrickPct");
+  brickPlane = glGetUniformLocation(brickProgram, "Plane");
+
+  woodMVP = glGetUniformLocation(woodProgram, "MVP");
+  woodColor = glGetUniformLocation(woodProgram, "WoodColor");
+  spacerColor = glGetUniformLocation(woodProgram, "SpacerColor");
+  woodSize = glGetUniformLocation(woodProgram, "WoodSize");
+  woodPct = glGetUniformLocation(woodProgram, "WoodPct");
+  woodPlane = glGetUniformLocation(woodProgram, "Plane");
 
   GLuint VertexArrayID;
   glGenVertexArrays(1, &VertexArrayID);
@@ -151,10 +132,23 @@ void drawScene() {
 
     glUseProgram(brickProgram);
       glUniformMatrix4fv(brickMVP, 1, GL_FALSE, &mvp[0][0]);
-      glDrawArrays(GL_TRIANGLES, 0, 4*3);
+      glUniform3f(brickColor, 1.0f, 0.3f, 0.3f);
+      glUniform3f(mortarColor, 0.85f, 0.86f, 0.84f);
+      glUniform2f(brickSize, 1.2f, 0.6f);
+      glUniform2f(brickPct, 0.9f, 0.9f);
+      glUniform3f(brickPlane, 1.0f, 1.0f, 0.0f);
+      glDrawArrays(GL_TRIANGLES, 0, 6);
+
+      glUniform3f(brickPlane, 0.0f, 1.0f, 1.0f);
+      glDrawArrays(GL_TRIANGLES, 6, 6);
 
     glUseProgram(woodProgram);
       glUniformMatrix4fv(woodMVP, 1, GL_FALSE, &mvp[0][0]);
+      glUniform3f(woodColor, 0.808f, 0.733f, 0.619f);
+      glUniform3f(spacerColor, 0.686f, 0.565f, 0.381f);
+      glUniform2f(woodSize, 2.0f, 0.4f);
+      glUniform2f(woodPct, 0.98f, 0.88f);
+      glUniform3f(woodPlane, 1.0f, 0.0f, 1.0f);
       glDrawArrays(GL_TRIANGLES, 12, 6);
   glDisableVertexAttribArray(0);
 }

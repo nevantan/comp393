@@ -1,23 +1,23 @@
 #version 450 core
 
-in vec2 xyPosition;
+in vec2 texPosition;
 in vec3 fragmentColor;
+
+uniform vec3 BrickColor;
+uniform vec3 MortarColor;
+uniform vec2 BrickSize;
+uniform vec2 BrickPct;
 
 out vec3 color;
 
 void main() {
-  vec3 brickColor = vec3(1.0, 0.3, 0.3);
-  vec3 mortarColor = vec3(0.85, 0.86, 0.84);
-  vec2 brickSize = vec2(1.8, 0.9);
-  vec2 brickPct = vec2(0.9, 0.9);
-
-  vec2 position = xyPosition / brickSize;
+  vec2 position = texPosition / BrickSize;
 
   if(fract(position.y * 0.5) > 0.5) position.x += 0.5;
 
   position = fract(position);
 
-  vec2 useBrick = step(position, brickPct);
+  vec2 useBrick = step(position, BrickPct);
 
-  color = mix(mortarColor, brickColor, useBrick.x * useBrick.y);
+  color = mix(MortarColor, BrickColor, useBrick.x * useBrick.y);
 }
