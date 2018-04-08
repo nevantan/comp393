@@ -1,9 +1,13 @@
 # TME 1
 
 **OS:** Ubuntu 16.04
+
 **Editor:** Sublime Text 3
+
 **Compiler:** g++ 5.4.0 20160609
+
 **Build System:** GNU Make 4.1
+
 **OpenGL:** 4.5
 
 ## Image Sources
