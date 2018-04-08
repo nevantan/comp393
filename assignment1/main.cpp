@@ -2,12 +2,16 @@
 // Unit 5 Assignment 1
 
 #include "shader.h"
+#include "texture.h"
 
 #include <iostream>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "lib/stb_image.h"
 
 using namespace std;
 using namespace glm;
@@ -19,7 +23,7 @@ GLuint woodProgram;
 GLuint pictureProgram;
 
 GLuint vertexbuffer;
-GLuint colorbuffer;
+GLuint uvbuffer;
 
 mat4 mvp;
 GLuint brickMVP;
@@ -37,8 +41,8 @@ GLuint woodPct;
 GLuint woodPlane;
 
 GLuint pictureMVP;
-
-GLuint starryNightTex;
+GLuint pictureTexture;
+GLuint starryNight;
 
 mat4 initCamera() {
   mat4 Projection = perspective(radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
@@ -71,12 +75,18 @@ void initScene() {
     -8.0, -6.0, 6.0,
     8.0, -6.0, 0.0,
     8.0, -6.0, 6.0,
-    -5.5, -0.854, 0.05, // Frame 1
+    /*-5.5, -0.854, 0.05, // Frame 1
     -5.5, 1.0, 0.05,
     -2.5, 1.0, 0.05,
     -5.5, -0.854, 0.05,
     -2.5, 1.0, 0.05,
-    -2.5, -0.854, 0.05,
+    -2.5, -0.854, 0.05,*/
+    -5.5, -2.0, 0.05, // Temp Frame 1
+    -5.5, 1.0, 0.05,
+    -2.5, 1.0, 0.05,
+    -5.5, -2.0, 0.05,
+    -2.5, 1.0, 0.05,
+    -2.5, -2.0, 0.05,
     1.5, -0.854, 0.05, // Frame 2
     1.5, 1.0, 0.05,
     4.5, 1.0, 0.05,
@@ -94,6 +104,49 @@ void initScene() {
   glGenBuffers(1, &vertexbuffer);
   glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
   glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+
+  static const GLfloat g_uv_buffer_data[] = {
+    0.0, 0.0, // Wall 1
+    0.0, 0.0,
+    0.0, 0.0,
+    0.0, 0.0,
+    0.0, 0.0,
+    0.0, 0.0,
+    0.0, 0.0, // Wall 2
+    0.0, 0.0,
+    0.0, 0.0,
+    0.0, 0.0,
+    0.0, 0.0,
+    0.0, 0.0,
+    0.0, 0.0, // Floor
+    0.0, 0.0,
+    0.0, 0.0,
+    0.0, 0.0,
+    0.0, 0.0,
+    0.0, 0.0,
+    0.0, 0.0, // Frame 1
+    0.0, 1.0,
+    1.0, 1.0,
+    0.0, 0.0,
+    1.0, 1.0,
+    1.0, 0.0,
+    0.0, 0.0, // Frame 2
+    0.0, 1.0,
+    1.0, 1.0,
+    0.0, 0.0,
+    1.0, 1.0,
+    1.0, 0.0,
+    0.0, 0.0, // Frame 3
+    0.0, 1.0,
+    1.0, 1.0,
+    0.0, 0.0,
+    1.0, 1.0,
+    1.0, 0.0
+  };
+
+  glGenBuffers(1, &uvbuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(g_uv_buffer_data), g_uv_buffer_data, GL_STATIC_DRAW);
 }
 
 void initialize(int argc, char * argv[]) {
@@ -121,6 +174,14 @@ void initialize(int argc, char * argv[]) {
 
   pictureMVP = glGetUniformLocation(pictureProgram, "MVP");
 
+  Texture starryNightTex = Texture("images/starry_night.png");
+  if(!starryNightTex.load()) {
+    cout << "There was a problem loading Starry Night" << endl;
+  }
+  starryNight = starryNightTex.id();
+
+  pictureTexture = glGetUniformLocation(pictureProgram, "Picture");
+
   GLuint VertexArrayID;
   glGenVertexArrays(1, &VertexArrayID);
   glBindVertexArray(VertexArrayID);
@@ -134,9 +195,20 @@ void initialize(int argc, char * argv[]) {
 }
 
 void drawScene() {
+  // Bind Textures
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, starryNight);
+
+  //glActiveTexture(GL_TEXTURE1);
+  //glBindTexture(GL_TEXTURE_2D, blueHorsesTex);
+
   glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+  glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
     glUseProgram(brickProgram);
       glUniformMatrix4fv(brickMVP, 1, GL_FALSE, &mvp[0][0]);
@@ -161,9 +233,11 @@ void drawScene() {
 
     glUseProgram(pictureProgram);
       glUniformMatrix4fv(pictureMVP, 1, GL_FALSE, &mvp[0][0]);
+      glUniform1i(pictureTexture, 0);
       glDrawArrays(GL_TRIANGLES, 18, 18);
 
   glDisableVertexAttribArray(0);
+  glDisableVertexAttribArray(1);
 }
 
 void render() {
