@@ -43,6 +43,8 @@ GLuint woodPlane;
 GLuint pictureMVP;
 GLuint pictureTexture;
 GLuint starryNight;
+GLuint blueHorses;
+GLuint monaLisa;
 
 mat4 initCamera() {
   mat4 Projection = perspective(radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
@@ -75,30 +77,24 @@ void initScene() {
     -8.0, -6.0, 6.0,
     8.0, -6.0, 0.0,
     8.0, -6.0, 6.0,
-    /*-5.5, -0.854, 0.05, // Frame 1
-    -5.5, 1.0, 0.05,
-    -2.5, 1.0, 0.05,
-    -5.5, -0.854, 0.05,
-    -2.5, 1.0, 0.05,
-    -2.5, -0.854, 0.05,*/
-    -5.5, -2.0, 0.05, // Temp Frame 1
+    -5.5, -2.0, 0.05, // Frame 1
     -5.5, 1.0, 0.05,
     -2.5, 1.0, 0.05,
     -5.5, -2.0, 0.05,
     -2.5, 1.0, 0.05,
     -2.5, -2.0, 0.05,
-    1.5, -0.854, 0.05, // Frame 2
-    1.5, 1.0, 0.05,
-    4.5, 1.0, 0.05,
-    1.5, -0.854, 0.05,
-    4.5, 1.0, 0.05,
-    4.5, -0.854, 0.05,
+    1.0, -1.5, 0.05, // Frame 2
+    1.0, 0.5, 0.05,
+    5.0, 0.5, 0.05,
+    1.0, -1.5, 0.05,
+    5.0, 0.5, 0.05,
+    5.0, -1.5, 0.05,
     7.95, -2.0, 1.5, // Frame 3
     7.95, 1.0, 1.5,
-    7.95, 1.0, 2.646,
+    7.95, 1.0, 3.0,
     7.95, -2.0, 1.5,
-    7.95, 1.0, 2.646,
-    7.95, -2.0, 2.646
+    7.95, 1.0, 3.0,
+    7.95, -2.0, 3.0
   };
 
   glGenBuffers(1, &vertexbuffer);
@@ -177,8 +173,23 @@ void initialize(int argc, char * argv[]) {
   Texture starryNightTex = Texture("images/starry_night.png");
   if(!starryNightTex.load()) {
     cout << "There was a problem loading Starry Night" << endl;
+    return;
   }
   starryNight = starryNightTex.id();
+
+  Texture blueHorsesTex = Texture("images/blue_horses.png");
+  if(!blueHorsesTex.load()) {
+    cout << "There was a problem loading Blue Horses" << endl;
+    return;
+  }
+  blueHorses = blueHorsesTex.id();
+
+  Texture monaLisaTex = Texture("images/mona_lisa.png");
+  if(!monaLisaTex.load()) {
+    cout << "There was a problem loading the Mona Lisa" << endl;
+    return;
+  }
+  monaLisa = monaLisaTex.id();
 
   pictureTexture = glGetUniformLocation(pictureProgram, "Picture");
 
@@ -199,8 +210,11 @@ void drawScene() {
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, starryNight);
 
-  //glActiveTexture(GL_TEXTURE1);
-  //glBindTexture(GL_TEXTURE_2D, blueHorsesTex);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, blueHorses);
+
+  glActiveTexture(GL_TEXTURE2);
+  glBindTexture(GL_TEXTURE_2D, monaLisa);
 
   glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
@@ -234,7 +248,11 @@ void drawScene() {
     glUseProgram(pictureProgram);
       glUniformMatrix4fv(pictureMVP, 1, GL_FALSE, &mvp[0][0]);
       glUniform1i(pictureTexture, 0);
-      glDrawArrays(GL_TRIANGLES, 18, 18);
+      glDrawArrays(GL_TRIANGLES, 18, 6);
+      glUniform1i(pictureTexture, 1);
+      glDrawArrays(GL_TRIANGLES, 24, 6);
+      glUniform1i(pictureTexture, 2);
+      glDrawArrays(GL_TRIANGLES, 30, 6);
 
   glDisableVertexAttribArray(0);
   glDisableVertexAttribArray(1);
