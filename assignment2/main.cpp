@@ -33,7 +33,7 @@ void initCamera() {
 }
 
 void initShaders() {
-  program = Shader("shaders/noise/noise.vert", "shaders/noise/noise.frag").Program();
+  program = Shader("shaders/noise.vert", "shaders/noise.frag").Program();
   MVP = glGetUniformLocation(program, "MVP");
   T = glGetUniformLocation(program, "T");
 }
