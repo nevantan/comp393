@@ -11,12 +11,13 @@ using namespace glm;
 
 // Window variables
 int width, height;
+double mx, my;
 GLFWwindow* window;
 
 // Shader variables
 mat4 mvp;
 GLuint MVP;
-GLuint T;
+GLuint uMouse;
 GLuint program;
 GLuint vertexbuffer;
 float tick;
@@ -35,7 +36,7 @@ void initCamera() {
 void initShaders() {
   program = Shader("shaders/noise.vert", "shaders/noise.frag").Program();
   MVP = glGetUniformLocation(program, "MVP");
-  T = glGetUniformLocation(program, "T");
+  uMouse = glGetUniformLocation(program, "Mouse");
 }
 
 void initScene() {
@@ -93,7 +94,7 @@ void drawNoise() {
 
     glUseProgram(program);
       glUniformMatrix4fv(MVP, 1, GL_FALSE, &mvp[0][0]);
-      glUniform1f(T, tick);
+      glUniform2f(uMouse, mx, my);
       glDrawArrays(GL_TRIANGLES, 0, 12*3);
 
   glDisableVertexAttribArray(0);
@@ -102,12 +103,15 @@ void drawNoise() {
 void render() {
   do {
     tick *= 1.3;
+    if(tick >= 100.0) tick = 3.0;
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     drawNoise();
 
     glfwSwapBuffers(window);
     glfwPollEvents();
+    glfwGetCursorPos(window, &mx, &my);
   } while(glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0);
 }
 

@@ -2,7 +2,7 @@
 
 in vec4 amp;
 in vec4 freq;
-in float t;
+in vec2 mouse;
 
 out vec4 color;
 
@@ -123,7 +123,7 @@ float interpolateNoise3D(vec3 pt, bool useSmooth) {
   float back = mix(mix(v1, v2, u.x), mix(v3, v4, u.x), u.y);
   float front = mix(mix(v5, v6, u.x), mix(v7, v8, u.x), u.y);
 
-  return mix(front, back, u.z);
+  return mix(back, front, u.z);
 }
 
 float makeNoise3D(vec3 pt, float size) {
@@ -139,7 +139,8 @@ float makeNoise3D(vec3 pt, float size) {
 }
 
 void main() {
-  vec3 st = vec3(gl_FragCoord.xy, rand(t));
+  float mAvg = (mouse.x + mouse.y) / 2.0;
+  vec3 st = vec3(gl_FragCoord.xy, mAvg / 4.0);
   float size = 64;
   color = vec4(vec3(makeNoise3D(st, size)), 0.3);
 }
