@@ -18,28 +18,8 @@ mat4 mvp;
 GLuint MVP;
 GLuint T;
 GLuint program;
-GLuint noiseProgram;
 GLuint vertexbuffer;
 float tick;
-
-// Noise variables
-int size = 256;
-int seed = 57;
-float randomTable[256][256];
-
-struct array {
-  float a[256][256][4];
-};
-
-// Initialization
-void initRandom() {
-  srand(seed);
-  for(int i = 0; i < size; i++) {
-    for(int j = 0; j < size; j++) {
-      randomTable[i][j] = (rand() % 1000) / 1000.0;
-    }
-  }
-}
 
 void initCamera() {
   mat4 Projection = perspective(radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
@@ -53,8 +33,7 @@ void initCamera() {
 }
 
 void initShaders() {
-  program = Shader("shaders/vertex.glsl", "shaders/fragment.glsl").Program();
-  noiseProgram = Shader("shaders/noise/noise.vert", "shaders/noise/noise.frag").Program();
+  program = Shader("shaders/noise/noise.vert", "shaders/noise/noise.frag").Program();
   MVP = glGetUniformLocation(program, "MVP");
   T = glGetUniformLocation(program, "T");
 }
@@ -107,66 +86,12 @@ void initScene() {
   glEnable(GL_DEPTH_TEST);
 }
 
-// Common Functions
-float interpolate(float a, float b, float x) {
-  float f = (1 - cos(x * 3.1415926)) * 0.5;
-  return (a * (1-f)) + (b * f);
-}
-
-float noise(int x, int y) {
-  //x = std::max(0, std::min(x, size));
-  //y = std::max(0, std::min(y, 256));
-  return randomTable[x][y];
-}
-
-float smoothNoise(int x, int y) {
-  float corners = (noise(x-1, y-1) + noise(x+1, y-1) + noise(x-1, y+1) + noise(x+1, y+1)) / 16;
-  float sides = (noise(x-1, y) + noise(x+1, y) + noise(x, y-1) + noise(x, y+1) / 8);
-  float center = noise(x, y) / 4;
-
-  return corners + sides + center;
-}
-
-// Interpolate Noise
-float interpolateNoise(float x, float y) {
-  int intX = int(x);
-  float fractX = x - intX;
-  int intY = int(y);
-  float fractY = y - intY;
-
-  float v1 = smoothNoise(intX, intY);
-  float v2 = smoothNoise(intX + 1, intY);
-  float v3 = smoothNoise(intX, intY + 1);
-  float v4 = smoothNoise(intX + 1, intY + 1);
-
-  float i1 = interpolate(v1, v2, fractX);
-  float i2 = interpolate(v3, v4, fractX);
-
-  return interpolate(i1, i2, fractY);
-}
-
-// Create Noise
-void makeNoise() {
-  int frequency = 4;
-  double amp = 0.3;
-  int step = size / frequency;
-
-  for(int i = 0; i < size; i++) {
-    float locX = ((float)i) / step;
-    for(int j = 0; j < size*4; j+=4) {
-      float locY = ((float)j) / step;
-      float n = interpolateNoise(locX, locY);
-      
-    }
-  }
-}
-
 void drawNoise() {
   glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
-    glUseProgram(noiseProgram);
+    glUseProgram(program);
       glUniformMatrix4fv(MVP, 1, GL_FALSE, &mvp[0][0]);
       glUniform1f(T, tick);
       glDrawArrays(GL_TRIANGLES, 0, 12*3);
@@ -187,7 +112,6 @@ void render() {
 }
 
 void init() {
-  initRandom();
   initCamera();
   initShaders();
   initScene();
