@@ -20,15 +20,12 @@ GLuint T;
 GLuint program;
 GLuint noiseProgram;
 GLuint vertexbuffer;
-GLuint uvbuffer;
-GLuint texture;
 float tick;
 
 // Noise variables
 int size = 256;
 int seed = 57;
 float randomTable[256][256];
-float noiseTex[256*256*4];
 
 struct array {
   float a[256][256][4];
@@ -41,15 +38,6 @@ void initRandom() {
     for(int j = 0; j < size; j++) {
       randomTable[i][j] = (rand() % 1000) / 1000.0;
     }
-  }
-}
-
-void initTextures() {
-  for(int i = 0; i < size*size*4; i += 4) {
-      noiseTex[i+0] = 0.9; // R
-      noiseTex[i+1] = 0.9; // G
-      noiseTex[i+2] = 0.9; // B
-      noiseTex[i+3] = 0.5; // A
   }
 }
 
@@ -115,49 +103,6 @@ void initScene() {
   glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
   glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
 
-  static const GLfloat g_uv_buffer_data[] = {
-    0.0, 0.0,
-    0.0, 1.0,
-    1.0, 1.0,
-    0.0, 0.0,
-    1.0, 1.0,
-    1.0, 0.0,
-    0.0, 0.0,
-    0.0, 1.0,
-    1.0, 1.0,
-    0.0, 0.0,
-    1.0, 1.0,
-    1.0, 0.0,
-    0.0, 0.0,
-    0.0, 1.0,
-    1.0, 1.0,
-    0.0, 0.0,
-    1.0, 1.0,
-    1.0, 0.0,
-    0.0, 0.0,
-    0.0, 1.0,
-    1.0, 1.0,
-    0.0, 0.0,
-    1.0, 1.0,
-    1.0, 0.0,
-    0.0, 0.0,
-    0.0, 1.0,
-    1.0, 1.0,
-    0.0, 0.0,
-    1.0, 1.0,
-    1.0, 0.0,
-    0.0, 0.0,
-    0.0, 1.0,
-    1.0, 1.0,
-    0.0, 0.0,
-    1.0, 1.0,
-    1.0, 0.0
-  };
-
-  glGenBuffers(1, &uvbuffer);
-  glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(g_uv_buffer_data), g_uv_buffer_data, GL_STATIC_DRAW);
-
   glClearColor(0.39f, 0.584, 0.929f, 0.0f);
   glEnable(GL_DEPTH_TEST);
 }
@@ -211,35 +156,15 @@ void makeNoise() {
     for(int j = 0; j < size*4; j+=4) {
       float locY = ((float)j) / step;
       float n = interpolateNoise(locX, locY);
-      noiseTex[(i*size*4)+j+0] = n * amp * randomTable[i][j];
-      noiseTex[(i*size*4)+j+1] = n * amp * randomTable[i][j];
-      noiseTex[(i*size*4)+j+2] = n * amp * randomTable[i][j];
-      noiseTex[(i*size*4)+j+3] = n * amp * randomTable[i][j];
+      
     }
   }
 }
 
-// Create Noise Texture
-void makeNoiseTexture() {
-  glGenTextures(1, &texture);
-  glBindTexture(GL_TEXTURE_2D, texture);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size, size, 0, GL_RGBA, GL_FLOAT, noiseTex);
-  glGenerateMipmap(GL_TEXTURE_2D);
-}
-
 void drawNoise() {
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, texture);
-
   glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-
-  /*glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);*/
 
     glUseProgram(noiseProgram);
       glUniformMatrix4fv(MVP, 1, GL_FALSE, &mvp[0][0]);
@@ -247,7 +172,6 @@ void drawNoise() {
       glDrawArrays(GL_TRIANGLES, 0, 12*3);
 
   glDisableVertexAttribArray(0);
-  //glDisableVertexAttribArray(1);
 }
 
 void render() {
@@ -264,13 +188,9 @@ void render() {
 
 void init() {
   initRandom();
-  initTextures();
   initCamera();
   initShaders();
   initScene();
-
-  makeNoise();
-  makeNoiseTexture();
 
   GLuint VertexArrayID;
   glGenVertexArrays(1, &VertexArrayID);
