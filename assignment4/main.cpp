@@ -29,8 +29,10 @@ GLuint MaxHeight;
 float dampen = 16;
 
 void initScene() {
+  // Setup shaders
   program = Shader("shaders/shader.vert", "shaders/shader.frag").Program();
 
+  // Setup MVP (camera) matrix and other uniforms
   mat4 projection = perspective(radians(90.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 300.0f);
   mat4 view = lookAt(
     vec3(100, 90, 220), // Position
@@ -40,9 +42,9 @@ void initScene() {
   mat4 model = mat4(1.0f);
   mvp = projection * view * model;
   MVP = glGetUniformLocation(program, "MVP");
-
   MaxHeight = glGetUniformLocation(program, "MaxHeight");
 
+  // Load heightmap
   int iwidth, iheight, comp;
   stbi_set_flip_vertically_on_load(true);
   unsigned char* image_data = stbi_load(
@@ -53,6 +55,7 @@ void initScene() {
     STBI_rgb
   );
 
+  // Populate vertex data, using pixel intensity for y-coord
   GLfloat g_vertex_buffer_data[iwidth*iheight*3];
   for(int i = 0; i < iwidth*iheight*3; i+=3) {
     int row = floor((i/3) / iwidth);
@@ -62,21 +65,11 @@ void initScene() {
     g_vertex_buffer_data[i+2] = row; // z
   }
 
-  cout << g_vertex_buffer_data[1] << endl;
-
   glGenBuffers(1, &vertexbuffer);
   glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
   glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
 
-  unsigned int g_element_buffer_data1[] = {
-    0, 1, 200, // CORRECT
-    1, 200, 201, // CORRECT
-    1, 2, 201, // CORRECT
-    2, 201, 202, // CORRECT
-    200, 201, 400,
-    201, 400, 401
-  };
-
+  // Setup indices
   unsigned int g_element_buffer_data[(iwidth-1)*(iheight-1)*2*3];
   for(int i = 0; i < (iwidth-1)*(iheight-1)*2*3; i+= 6) {
     int row = floor((i/6) / (iwidth - 1));
@@ -98,10 +91,12 @@ void initScene() {
 }
 
 void drawScene() {
+  // Setup shaders and uniforms
   glUseProgram(program);
   glUniformMatrix4fv(MVP, 1, GL_FALSE, &mvp[0][0]);
   glUniform1f(MaxHeight, 256 / dampen);
 
+  // Draw terrain
   glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
@@ -123,6 +118,7 @@ void render() {
 }
 
 int main(int argc, char **argv) {
+  // Create window
   if(!glfwInit()) {
     cout << "Failed to initialize GLFW" << endl;
     return -1;
@@ -147,14 +143,20 @@ int main(int argc, char **argv) {
     return -1;
   }
 
+  // Setup VAO
   glGenVertexArrays(1, &VertexArrayID);
   glBindVertexArray(VertexArrayID);
 
-  //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  // Set to wireframe mode
+  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+  // Initialize the scene
   initScene();
 
+  // Setup for input
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
+
+  // Start render loop
   render();
 
   return 0;
