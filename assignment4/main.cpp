@@ -1,3 +1,12 @@
+/*
+ *  File: main.cpp
+ *  Description: Renders terrain with vertex height sourced from a heightmap
+ *  Date: April 20, 2018
+ *
+ *  Author: Nevan Tan <nevan@tanclan.ca>
+ *
+ */
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
