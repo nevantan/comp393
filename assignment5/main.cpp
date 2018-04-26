@@ -17,13 +17,16 @@ GLFWwindow* window;
 GLuint VertexArrayID;
 
 GLuint vertexbuffer;
-Shader shader;
-
+GLuint elementbuffer;
+GLuint uvbuffer;
+Shader textureShader;
+Shader reflectionShader;
 mat4 mvp;
 
-void initScene() {
-  shader = Shader("shaders/shader.vert", "shaders/shader.frag");
+GLuint skyline;
+GLuint normalMap;
 
+void initMVP() {
   mat4 Projection = perspective(
     radians(45.0f), // FOV
     (float)width / (float)height, // Aspect ratio
@@ -32,35 +35,105 @@ void initScene() {
   );
 
   mat4 View = lookAt(
-    vec3(4, 3, 3), // Position
-    vec3(0, 0, 0), // Target
+    vec3(0, 4, 6), // Position
+    vec3(0, 1, 0), // Target
     vec3(0, 1, 0)  // Up Vector
   );
 
   mat4 Model = mat4(1.0f);
 
   mvp = Projection * View * Model;
+}
+
+void initTextures() {
+  Texture skylineTex = Texture("images/skyline.png");
+  if(!skylineTex.load()) {
+    cerr << "There was a problem loading the skyline texture" << endl;
+    return;
+  }
+  skyline = skylineTex.id();
+
+  Texture normalMapTex = Texture("images/normal.png");
+  if(!normalMapTex.load()) {
+    cerr << "There was a problem loading the normal map" << endl;
+    return;
+  }
+  normalMap = normalMapTex.id();
+}
+
+void initScene() {
+  textureShader = Shader("shaders/texture.vert", "shaders/texture.frag");
+  reflectionShader = Shader("shaders/reflection.vert", "shaders/reflection.frag");
+
+  initMVP();
+  initTextures();
 
   static const GLfloat g_vertex_buffer_data[] = {
-     -1.0f, -1.0f, 0.0f,
-     1.0f, -1.0f, 0.0f,
-     0.0f,  1.0f, 0.0f,
+     -4.0, 0.0, 0.0,
+     -4.0, 4.0, 0.0,
+     4.0, 4.0, 0.0,
+     -4.0, 0.0, 0.0,
+     4.0, 4.0, 0.0,
+     4.0, 0.0, 0.0,
+     -4.0, 0.0, 4.0,
+     -4.0, 0.0, 0.0,
+     4.0, 0.0, 0.0,
+     -4.0, 0.0, 4.0,
+     4.0, 0.0, 0.0,
+     4.0, 0.0, 4.0
   };
 
   glGenBuffers(1, &vertexbuffer);
   glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
   glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+
+  static const GLfloat g_uv_buffer_data[] = {
+    0.0, 0.0,
+    0.0, 1.0,
+    1.0, 1.0,
+    0.0, 0.0,
+    1.0, 1.0,
+    1.0, 0.0,
+    0.0, 1.0,
+    0.0, 0.0,
+    1.0, 0.0,
+    0.0, 1.0,
+    1.0, 0.0,
+    1.0, 1.0
+  };
+
+  glGenBuffers(1, &uvbuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(g_uv_buffer_data), g_uv_buffer_data, GL_STATIC_DRAW);
 }
 
 void drawScene() {
-  glUseProgram(shader.Program());
-  glUniformMatrix4fv(shader.Uniform("MVP"), 1, GL_FALSE, &mvp[0][0]);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, skyline);
+
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, normalMap);
 
   glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+  glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    
+    glUseProgram(textureShader.Program());
+    glUniformMatrix4fv(textureShader.Uniform("MVP"), 1, GL_FALSE, &mvp[0][0]);
+    glUniform1i(textureShader.Uniform("Picture"), 0);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    glUseProgram(reflectionShader.Program());
+    glUniformMatrix4fv(reflectionShader.Uniform("MVP"), 1, GL_FALSE, &mvp[0][0]);
+    glUniform1i(reflectionShader.Uniform("NormalMap"), 1);
+    glDrawArrays(GL_TRIANGLES, 6, 12);
+
   glDisableVertexAttribArray(0);
+  glDisableVertexAttribArray(1);
 }
 
 void render() {
