@@ -12,14 +12,34 @@ using namespace glm;
 #define STB_IMAGE_IMPLEMENTATION
 #include "lib/stb_image.h"
 
+int width, height;
 GLFWwindow* window;
 GLuint VertexArrayID;
 
 GLuint vertexbuffer;
 Shader shader;
 
+mat4 mvp;
+
 void initScene() {
   shader = Shader("shaders/shader.vert", "shaders/shader.frag");
+
+  mat4 Projection = perspective(
+    radians(45.0f), // FOV
+    (float)width / (float)height, // Aspect ratio
+    0.1f, // Near clipping plane
+    100.0f // Far clipping plane
+  );
+
+  mat4 View = lookAt(
+    vec3(4, 3, 3), // Position
+    vec3(0, 0, 0), // Target
+    vec3(0, 1, 0)  // Up Vector
+  );
+
+  mat4 Model = mat4(1.0f);
+
+  mvp = Projection * View * Model;
 
   static const GLfloat g_vertex_buffer_data[] = {
      -1.0f, -1.0f, 0.0f,
@@ -34,6 +54,7 @@ void initScene() {
 
 void drawScene() {
   glUseProgram(shader.Program());
+  glUniformMatrix4fv(shader.Uniform("MVP"), 1, GL_FALSE, &mvp[0][0]);
 
   glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
@@ -69,7 +90,9 @@ int main() {
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  window = glfwCreateWindow(1024, 768, "Assignment 5 - UV Map", NULL, NULL);
+  width = 1024;
+  height = 768;
+  window = glfwCreateWindow(width, height, "Assignment 5 - UV Map", NULL, NULL);
   if(window == NULL) {
     cerr << "Failed to open GLFW window" << endl;
     glfwTerminate();

@@ -26,6 +26,13 @@ GLuint Shader::Program() {
   return progID;
 }
 
+GLuint Shader::Uniform(string name) {
+  if(uniforms.find(name) == uniforms.end()) {
+    uniforms[name] = glGetUniformLocation(progID, name.c_str());
+  }
+  return uniforms.find(name)->second;
+}
+
 Shader::~Shader() {
   glDeleteShader(vertShader);
   glDeleteShader(fragShader);

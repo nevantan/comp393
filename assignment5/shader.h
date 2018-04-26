@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <map>
 
 class Shader {
   GLuint vertShader;
@@ -13,6 +14,7 @@ class Shader {
   GLuint progID;
   GLint result;
   int logLength;
+  std::map<std::string, GLuint> uniforms;
 
   std::string readFile(std::string filepath);
   void compileShader(GLuint& shader, const char *shaderSrc);
