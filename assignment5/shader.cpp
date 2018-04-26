@@ -1,6 +1,8 @@
 #include "shader.h"
 using namespace std;
 
+Shader::Shader() {}
+
 Shader::Shader(string vert, string frag) {
   vertShader = glCreateShader(GL_VERTEX_SHADER);
   fragShader = glCreateShader(GL_FRAGMENT_SHADER);

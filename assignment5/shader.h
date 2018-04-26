@@ -19,9 +19,11 @@ class Shader {
   void verifyShader(GLuint& shader);
 
   public:
+    Shader();
     Shader(std::string vert, std::string frag);
     ~Shader();
     GLuint Program();
+    GLuint Uniform(std::string name);
 };
 
 #endif
