@@ -1,7 +1,9 @@
 #include "camera.h"
 #include "shader.h"
+#include "plane.h"
 
 #include <iostream>
+#include <vector>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -29,31 +31,7 @@ void initScene() {
 
   basicShader = Shader("shaders/basic.vert", "shaders/basic.frag");
 
-  static const GLfloat g_vertex_buffer_data[] = {
-    -4.0f, 0.0f, -4.0f, // Back wall
-    -4.0f, 6.0f, -4.0f,
-    4.0f, 6.0f, -4.0f,
-    -4.0f, 0.0f, -4.0f,
-    4.0f, 6.0f, -4.0f,
-    4.0f, 0.0f, -4.0f,
-    4.0f, 0.0f, -4.0f, // Side wall
-    4.0f, 6.0f, -4.0f,
-    4.0f, 6.0f, 4.0f,
-    4.0f, 0.0f, -4.0f,
-    4.0f, 6.0f, 4.0f,
-    4.0f, 0.0f, 4.0f,
-    -4.0f, 0.0f, 4.0f, // Floor
-    -4.0f, 0.0f, -4.0f,
-    4.0f, 0.0f, -4.0f,
-    -4.0f, 0.0f, 4.0f,
-    4.0f, 0.0f, -4.0f,
-    4.0f, 0.0f, 4.0f,
-    -1.0f, 2.0f, -4.0f, // Window 1
-    -1.0f, 4.0f, -4.0f,
-    1.0f, 4.0f, -4.0f,
-    -1.0f, 2.0f, -4.0f,
-    1.0f, 4.0f, -4.0f,
-    1.0f, 2.0f, -4.0f,
+  static const GLfloat g_vertex_buffer_data_arr[] = {
     4.0f, 2.0f, -1.0f, // Window 2
     4.0f, 4.0f, -1.0f,
     4.0f, 4.0f, 1.0f,
@@ -61,10 +39,31 @@ void initScene() {
     4.0f, 4.0f, 1.0f,
     4.0f, 2.0f, 1.0f
   };
+  Plane backWall = Plane(-4.0f, 6.0f, -4.0f, 8.0f, 6.0f, vec3(0, 0, 1));
+  vector<GLfloat> backWallVertices = backWall.Triangles();
+
+  Plane sideWall = Plane(4.0f, 6.0f, -4.0f, 8.0f, 6.0f, vec3(1, 0, 0));
+  vector<GLfloat> sideWallVertices = sideWall.Triangles();
+
+  Plane floor = Plane(-4.0f, 0.0f, -4.0f, 8.0f, 8.0f, vec3(0, 1, 0));
+  vector<GLfloat> floorVertices = floor.Triangles();
+
+  Plane window1 = Plane(-1.0f, 4.0f, -4.0f, 2.0f, 2.0f, vec3(0, 0, 1));
+  vector<GLfloat> window1Vertices = window1.Triangles();
+
+  Plane window2 = Plane(4.0f, 4.0f, -1.0f, 2.0f, 2.0f, vec3(1, 0, 0));
+  vector<GLfloat> window2Vertices = window2.Triangles();
+
+  vector<GLfloat> g_vertex_buffer_data;
+  g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), backWallVertices.begin(), backWallVertices.end());
+  g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), sideWallVertices.begin(), sideWallVertices.end());
+  g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), floorVertices.begin(), floorVertices.end());
+  g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), window1Vertices.begin(), window1Vertices.end());
+  g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), window2Vertices.begin(), window2Vertices.end());
 
   glGenBuffers(1, &vertexbuffer);
   glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, g_vertex_buffer_data.size() * sizeof(GLfloat), &g_vertex_buffer_data[0], GL_STATIC_DRAW);
 
   static const GLfloat g_color_buffer_data[] = {
     0.5f, 0.5f, 0.5f, // Back wall
