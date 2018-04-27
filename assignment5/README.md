@@ -26,6 +26,9 @@ The red tint is applied by multiplying each component of the output by a varying
 | |- libGLEW.so.2.0.0
 | |- libglfw.so.3.2
 | |- stb_image.h
+|- screenshots
+| |- screenshot1.png
+| |- screenshot2.png
 |- shaders
 | |- reflection.frag
 | |- reflection.vert
