@@ -1,6 +1,7 @@
 #include "camera.h"
 #include "shader.h"
 #include "plane.h"
+#include "volume.h"
 
 #include <iostream>
 #include <vector>
@@ -48,11 +49,27 @@ void initScene() {
   Plane floor = Plane(-4.0f, 0.0f, -4.0f, 8.0f, 8.0f, vec3(0, 1, 0));
   vector<GLfloat> floorVertices = floor.Triangles();
 
-  Plane window1 = Plane(-1.0f, 4.0f, -4.0f, 2.0f, 2.0f, vec3(0, 0, 1));
+  Plane window1 = Plane(-1.0f, 4.0f, -3.95f, 2.0f, 2.0f, vec3(0, 0, 1));
   vector<GLfloat> window1Vertices = window1.Triangles();
 
-  Plane window2 = Plane(4.0f, 4.0f, -1.0f, 2.0f, 2.0f, vec3(1, 0, 0));
+  Plane window2 = Plane(3.95f, 4.0f, -1.0f, 2.0f, 2.0f, vec3(1, 0, 0));
   vector<GLfloat> window2Vertices = window2.Triangles();
+
+  // Table
+  Volume tableSurface = Volume(vec3(-2.0, 2.2, -2.0), vec3(2.0, 2.0, 2.0));
+  vector<GLfloat> tableSurfaceVertices = tableSurface.Triangles();
+
+  Volume leg1 = Volume(vec3(-1.9, 2.15, -1.9), vec3(-1.8, 0.0, -1.8));
+  vector<GLfloat> leg1Vertices = leg1.Triangles();
+
+  Volume leg2 = Volume(vec3(1.9, 2.15, -1.9), vec3(1.8, 0.0, -1.8));
+  vector<GLfloat> leg2Vertices = leg2.Triangles();
+
+  Volume leg3 = Volume(vec3(-1.9, 2.15, 1.9), vec3(-1.8, 0.0, 1.8));
+  vector<GLfloat> leg3Vertices = leg3.Triangles();
+
+  Volume leg4 = Volume(vec3(1.9, 2.15, 1.9), vec3(1.8, 0.0, 1.8));
+  vector<GLfloat> leg4Vertices = leg4.Triangles();
 
   vector<GLfloat> g_vertex_buffer_data;
   g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), backWallVertices.begin(), backWallVertices.end());
@@ -60,6 +77,13 @@ void initScene() {
   g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), floorVertices.begin(), floorVertices.end());
   g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), window1Vertices.begin(), window1Vertices.end());
   g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), window2Vertices.begin(), window2Vertices.end());
+
+  // Table triangles
+  g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), tableSurfaceVertices.begin(), tableSurfaceVertices.end());
+  g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), leg1Vertices.begin(), leg1Vertices.end());
+  g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), leg2Vertices.begin(), leg2Vertices.end());
+  g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), leg3Vertices.begin(), leg3Vertices.end());
+  g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), leg4Vertices.begin(), leg4Vertices.end());
 
   glGenBuffers(1, &vertexbuffer);
   glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
@@ -95,7 +119,43 @@ void initScene() {
     0.9f, 0.9f, 0.9f,
     0.9f, 0.9f, 0.9f,
     0.9f, 0.9f, 0.9f,
-    0.9f, 0.9f, 0.9f
+    0.9f, 0.9f, 0.9f,
+    1.0f, 0.0f, 0.0f, // Volume - Top
+    1.0f, 0.0f, 0.0f,
+    1.0f, 0.0f, 0.0f,
+    1.0f, 0.0f, 0.0f,
+    1.0f, 0.0f, 0.0f,
+    1.0f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f, // Volume - Back
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f, // Volume - Right
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f,
+    0.9f, 0.0f, 0.0f, // Volume - Bottom
+    0.9f, 0.0f, 0.0f,
+    0.9f, 0.0f, 0.0f,
+    0.9f, 0.0f, 0.0f,
+    0.9f, 0.0f, 0.0f,
+    0.9f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f, // Volume - Left
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f, // Volume - Front
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f,
+    0.8f, 0.0f, 0.0f,
   };
 
   glGenBuffers(1, &colorbuffer);
@@ -115,13 +175,13 @@ void drawScene() {
     glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
-    glDrawArrays(GL_TRIANGLES, 0, 30);
+    glDrawArrays(GL_TRIANGLES, 0, 213);
   glDisableVertexAttribArray(0);
 }
 
 void render() {
   do {
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     drawScene();
 
@@ -163,6 +223,9 @@ int main() {
 
   glGenVertexArrays(1, &VertexArrayID);
   glBindVertexArray(VertexArrayID);
+
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
 
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
