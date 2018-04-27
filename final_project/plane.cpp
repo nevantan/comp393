@@ -3,13 +3,21 @@
 using namespace std;
 using namespace glm;
 
-Plane::Plane() {}
-
-Plane::Plane(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, vec3 normal) {
+void Plane::init(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, vec3 normal) {
   vertices.push_back(x); vertices.push_back(y); vertices.push_back(z); // Upper-left
   vertices.push_back(x + (w * (1-normal.x))); vertices.push_back(y); vertices.push_back(z + (w * normal.x)); // Upper-right
   vertices.push_back(x); vertices.push_back(y - (h * (1-normal.y))); vertices.push_back(z + (h * normal.y)); // Lower-left
   vertices.push_back(x + (w * (1-normal.x))); vertices.push_back(y - (h * (1-normal.y))); vertices.push_back(z + (h * normal.y) + (w * normal.x)); // Lower-right
+}
+
+Plane::Plane() {}
+
+Plane::Plane(vec3 p, vec2 s, vec3 normal) {
+  init(p.x, p.y, p.z, s.x, s.y, normal);
+}
+
+Plane::Plane(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, vec3 normal) {
+  init(x, y, z, w, h, normal);
 }
 
 vector<GLfloat> Plane::Vertices() {
