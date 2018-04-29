@@ -13,6 +13,7 @@ class Texture {
   GLuint texture;
 
 public:
+  Texture();
   Texture(const char* filename);
   ~Texture();
   bool load();
