@@ -49,3 +49,7 @@ void Camera::MoveTo(vec3 pos) {
 void Camera::LookAt(vec3 target) {
   recalcView(pos, target, up);
 }
+
+vec3 Camera::Position() {
+  return pos;
+}

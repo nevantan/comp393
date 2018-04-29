@@ -29,6 +29,8 @@ public:
 
   void MoveTo(glm::vec3 pos);
   void LookAt(glm::vec3 target);
+
+  glm::vec3 Position();
 };
 
 #endif
