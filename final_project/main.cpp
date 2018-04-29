@@ -18,9 +18,11 @@ GLuint VertexArrayID;
 
 GLuint vertexbuffer;
 GLuint colorbuffer;
+GLuint normalbuffer;
 
 Camera camera;
 Shader basicShader;
+Shader lightingShader;
 
 void initScene() {
   camera = Camera(
@@ -30,48 +32,65 @@ void initScene() {
     vec3(0, 1, 0)  // Up
   );
 
-  basicShader = Shader("shaders/basic.vert", "shaders/basic.frag");
+  // basicShader = Shader("shaders/basic.vert", "shaders/basic.frag");
+  lightingShader = Shader("shaders/lighting.vert", "shaders/lighting.frag");
 
-  static const GLfloat g_vertex_buffer_data_arr[] = {
-    4.0f, 2.0f, -1.0f, // Window 2
-    4.0f, 4.0f, -1.0f,
-    4.0f, 4.0f, 1.0f,
-    4.0f, 2.0f, -1.0f,
-    4.0f, 4.0f, 1.0f,
-    4.0f, 2.0f, 1.0f
-  };
+  // Room geometry
   Plane backWall = Plane(-4.0f, 6.0f, -4.0f, 8.0f, 6.0f, vec3(0, 0, 1));
   vector<GLfloat> backWallVertices = backWall.Triangles();
+  vector<vec3> backWallNormals = backWall.Normals();
 
-  Plane sideWall = Plane(4.0f, 6.0f, -4.0f, 8.0f, 6.0f, vec3(1, 0, 0));
+  Plane sideWall = Plane(4.0f, 6.0f, -4.0f, 8.0f, 6.0f, vec3(-1, 0, 0));
   vector<GLfloat> sideWallVertices = sideWall.Triangles();
+  vector<vec3> sideWallNormals = sideWall.Normals();
 
   Plane floor = Plane(-4.0f, 0.0f, -4.0f, 8.0f, 8.0f, vec3(0, 1, 0));
   vector<GLfloat> floorVertices = floor.Triangles();
+  vector<vec3> floorNormals = floor.Normals();
 
   Plane window1 = Plane(-1.0f, 4.0f, -3.95f, 2.0f, 2.0f, vec3(0, 0, 1));
   vector<GLfloat> window1Vertices = window1.Triangles();
+  vector<vec3> window1Normals = window1.Normals();
 
-  Plane window2 = Plane(3.95f, 4.0f, -1.0f, 2.0f, 2.0f, vec3(1, 0, 0));
+  Plane window2 = Plane(3.95f, 4.0f, -1.0f, 2.0f, 2.0f, vec3(-1, 0, 0));
   vector<GLfloat> window2Vertices = window2.Triangles();
+  vector<vec3> window2Normals = window2.Normals();
 
   // Table
   Volume tableSurface = Volume(vec3(-2.0, 2.2, -2.0), vec3(2.0, 2.0, 2.0));
   vector<GLfloat> tableSurfaceVertices = tableSurface.Triangles();
+  vector<vec3> tableSurfaceNormals = tableSurface.Normals();
 
   Volume leg1 = Volume(vec3(-1.9, 2.15, -1.9), vec3(-1.8, 0.0, -1.8));
   vector<GLfloat> leg1Vertices = leg1.Triangles();
+  vector<vec3> leg1Normals = leg1.Normals();
 
   Volume leg2 = Volume(vec3(1.9, 2.15, -1.9), vec3(1.8, 0.0, -1.8));
   vector<GLfloat> leg2Vertices = leg2.Triangles();
+  vector<vec3> leg2Normals = leg2.Normals();
 
   Volume leg3 = Volume(vec3(-1.9, 2.15, 1.9), vec3(-1.8, 0.0, 1.8));
   vector<GLfloat> leg3Vertices = leg3.Triangles();
+  vector<vec3> leg3Normals = leg3.Normals();
 
   Volume leg4 = Volume(vec3(1.9, 2.15, 1.9), vec3(1.8, 0.0, 1.8));
   vector<GLfloat> leg4Vertices = leg4.Triangles();
+  vector<vec3> leg4Normals = leg4.Normals();
 
+  // Candle
+  Volume candle = Volume(vec3(1.2, 2.7, -1.2), vec3(1.3, 2.2, -1.1));
+  vector<GLfloat> candleVertices = candle.Triangles();
+  vector<vec3> candleNormals = candle.Normals();
+
+  // Cube
+  Volume cube = Volume(vec3(-1.2, 2.4, 1.2), vec3(-1.0, 2.2, 1.4));
+  vector<GLfloat> cubeVertices = cube.Triangles();
+  vector<vec3> cubeNormals = cube.Normals();
+
+  // Build buffer data
   vector<GLfloat> g_vertex_buffer_data;
+
+  // Room triangles
   g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), backWallVertices.begin(), backWallVertices.end());
   g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), sideWallVertices.begin(), sideWallVertices.end());
   g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), floorVertices.begin(), floorVertices.end());
@@ -85,87 +104,67 @@ void initScene() {
   g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), leg3Vertices.begin(), leg3Vertices.end());
   g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), leg4Vertices.begin(), leg4Vertices.end());
 
+  // Objects
+  g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), candleVertices.begin(), candleVertices.end());
+  g_vertex_buffer_data.insert(g_vertex_buffer_data.end(), cubeVertices.begin(), cubeVertices.end());
+
   glGenBuffers(1, &vertexbuffer);
   glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
   glBufferData(GL_ARRAY_BUFFER, g_vertex_buffer_data.size() * sizeof(GLfloat), &g_vertex_buffer_data[0], GL_STATIC_DRAW);
 
-  static const GLfloat g_color_buffer_data[] = {
-    0.5f, 0.5f, 0.5f, // Back wall
-    0.5f, 0.5f, 0.5f,
-    0.5f, 0.5f, 0.5f,
-    0.5f, 0.5f, 0.5f,
-    0.5f, 0.5f, 0.5f,
-    0.5f, 0.5f, 0.5f,
-    0.6f, 0.6f, 0.6f, // Side wall
-    0.6f, 0.6f, 0.6f,
-    0.6f, 0.6f, 0.6f,
-    0.6f, 0.6f, 0.6f,
-    0.6f, 0.6f, 0.6f,
-    0.6f, 0.6f, 0.6f,
-    0.4f, 0.4f, 0.4f, // Floor
-    0.4f, 0.4f, 0.4f,
-    0.4f, 0.4f, 0.4f,
-    0.4f, 0.4f, 0.4f,
-    0.4f, 0.4f, 0.4f,
-    0.4f, 0.4f, 0.4f,
-    0.9f, 0.9f, 0.9f, // Window 1
-    0.9f, 0.9f, 0.9f,
-    0.9f, 0.9f, 0.9f,
-    0.9f, 0.9f, 0.9f,
-    0.9f, 0.9f, 0.9f,
-    0.9f, 0.9f, 0.9f,
-    0.9f, 0.9f, 0.9f, // Window 2
-    0.9f, 0.9f, 0.9f,
-    0.9f, 0.9f, 0.9f,
-    0.9f, 0.9f, 0.9f,
-    0.9f, 0.9f, 0.9f,
-    0.9f, 0.9f, 0.9f,
-    1.0f, 0.0f, 0.0f, // Volume - Top
-    1.0f, 0.0f, 0.0f,
-    1.0f, 0.0f, 0.0f,
-    1.0f, 0.0f, 0.0f,
-    1.0f, 0.0f, 0.0f,
-    1.0f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f, // Volume - Back
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f, // Volume - Right
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f,
-    0.9f, 0.0f, 0.0f, // Volume - Bottom
-    0.9f, 0.0f, 0.0f,
-    0.9f, 0.0f, 0.0f,
-    0.9f, 0.0f, 0.0f,
-    0.9f, 0.0f, 0.0f,
-    0.9f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f, // Volume - Left
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f, // Volume - Front
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f,
-    0.8f, 0.0f, 0.0f,
-  };
+  vector<GLfloat> g_color_buffer_data;
+  for(int i = 0; i < 285*3; i++) {
+    g_color_buffer_data.push_back(0.5f);
+  }
 
   glGenBuffers(1, &colorbuffer);
   glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(g_color_buffer_data), g_color_buffer_data, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, g_color_buffer_data.size() * sizeof(GLfloat), &g_color_buffer_data[0], GL_STATIC_DRAW);
+
+  // Build normal buffer data
+  vector<vec3> normals;
+
+  // Room normals
+  normals.insert(normals.end(), backWallNormals.begin(), backWallNormals.end());
+  normals.insert(normals.end(), sideWallNormals.begin(), sideWallNormals.end());
+  normals.insert(normals.end(), floorNormals.begin(), floorNormals.end());
+  normals.insert(normals.end(), window1Normals.begin(), window1Normals.end());
+  normals.insert(normals.end(), window2Normals.begin(), window2Normals.end());
+
+  // Table normals
+  normals.insert(normals.end(), tableSurfaceNormals.begin(), tableSurfaceNormals.end());
+  normals.insert(normals.end(), leg1Normals.begin(), leg1Normals.end());
+  normals.insert(normals.end(), leg2Normals.begin(), leg2Normals.end());
+  normals.insert(normals.end(), leg3Normals.begin(), leg3Normals.end());
+  normals.insert(normals.end(), leg4Normals.begin(), leg4Normals.end());
+
+  // Object normals
+  normals.insert(normals.end(), candleNormals.begin(), candleNormals.end());
+  normals.insert(normals.end(), cubeNormals.begin(), cubeNormals.end());
+
+  //cout << normals[0].x << ", " << normals[0].y << ", " << normals[0].z << endl;
+
+  glGenBuffers(1, &normalbuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+  glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(vec3), &normals[0], GL_STATIC_DRAW);
 }
 
 void drawScene() {
-  glUseProgram(basicShader.Program());
-  glUniformMatrix4fv(basicShader.Uniform("MVP"), 1, GL_FALSE, &camera.MVP()[0][0]);
+  glUseProgram(lightingShader.Program());
+  glUniformMatrix4fv(lightingShader.Uniform("Model"), 1, GL_FALSE, &camera.Model()[0][0]);
+  glUniformMatrix4fv(lightingShader.Uniform("View"), 1, GL_FALSE, &camera.View()[0][0]);
+  glUniformMatrix4fv(lightingShader.Uniform("Projection"), 1, GL_FALSE, &camera.Projection()[0][0]);
+  glUniform3f(lightingShader.Uniform("LightColor"), 1.0f, 1.0f, 1.0f);
+  glUniform3f(lightingShader.Uniform("CameraPosition"), camera.Position().x, camera.Position().y, camera.Position().z);
+  glUniform3f(lightingShader.Uniform("material.ambient"), 1.0f, 0.5f, 0.31f);
+  glUniform3f(lightingShader.Uniform("material.diffuse"), 1.0f, 0.5f, 0.31f);
+  glUniform3f(lightingShader.Uniform("material.specular"), 0.5f, 0.5f, 0.5f);
+  glUniform1f(lightingShader.Uniform("material.shininess"), 32.0f);
+  // glUniform3f(lightingShader.Uniform("light.position"), 1.25f, 2.8f, -1.15f);
+  glUniform3f(lightingShader.Uniform("light.position"), 0.0f, 3.0f, -4.05f);
+  glUniform3f(lightingShader.Uniform("light.ambient"), 0.2f, 0.2f, 0.2f);
+  glUniform3f(lightingShader.Uniform("light.diffuse"), 0.5f, 0.5f, 0.5f);
+  glUniform3f(lightingShader.Uniform("light.specular"), 1.0f, 1.0f, 1.0f);
 
   glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
@@ -175,8 +174,14 @@ void drawScene() {
     glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
-    glDrawArrays(GL_TRIANGLES, 0, 213);
+  glEnableVertexAttribArray(2);
+    glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+    glDrawArrays(GL_TRIANGLES, 0, 285);
   glDisableVertexAttribArray(0);
+  glDisableVertexAttribArray(1);
+  glDisableVertexAttribArray(2);
 }
 
 void render() {
