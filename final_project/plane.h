@@ -18,6 +18,7 @@ public:
   Plane(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, glm::vec3 normal);
   std::vector<GLfloat> Vertices();
   std::vector<GLfloat> Triangles();
+  std::vector<glm::vec3> Normals();
 };
 
 #endif

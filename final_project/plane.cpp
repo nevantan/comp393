@@ -1,13 +1,18 @@
 #include "plane.h"
 #include <iostream>
+#include <stdlib.h>
 using namespace std;
 using namespace glm;
 
 void Plane::init(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, vec3 normal) {
+  this->normal = normal;
+  
+  float nx = abs(normal.x);
+
   vertices.push_back(x); vertices.push_back(y); vertices.push_back(z); // Upper-left
-  vertices.push_back(x + (w * (1-normal.x))); vertices.push_back(y); vertices.push_back(z + (w * normal.x)); // Upper-right
+  vertices.push_back(x + (w * (1-nx))); vertices.push_back(y); vertices.push_back(z + (w * nx)); // Upper-right
   vertices.push_back(x); vertices.push_back(y - (h * (1-normal.y))); vertices.push_back(z + (h * normal.y)); // Lower-left
-  vertices.push_back(x + (w * (1-normal.x))); vertices.push_back(y - (h * (1-normal.y))); vertices.push_back(z + (h * normal.y) + (w * normal.x)); // Lower-right
+  vertices.push_back(x + (w * (1-nx))); vertices.push_back(y - (h * (1-normal.y))); vertices.push_back(z + (h * normal.y) + (w * nx)); // Lower-right
 }
 
 Plane::Plane() {}
@@ -33,4 +38,13 @@ vector<GLfloat> Plane::Triangles() {
   vertex.push_back(vertices[3]); vertex.push_back(vertices[4]); vertex.push_back(vertices[5]); // 1
   vertex.push_back(vertices[9]); vertex.push_back(vertices[10]); vertex.push_back(vertices[11]); // 3
   return vertex;
+}
+
+vector<vec3> Plane::Normals() {
+  vector<vec3> normals;
+  const int NUM_VERTICES = 6;
+  for(int i = 0; i < NUM_VERTICES; i++) {
+    normals.push_back(normal);
+  }
+  return normals;
 }
