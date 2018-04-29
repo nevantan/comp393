@@ -13,6 +13,7 @@ public:
   Volume();
   Volume(glm::vec3 p1, glm::vec3 p2);
   std::vector<GLfloat> Triangles();
+  std::vector<glm::vec3> Normals();
 };
 
 #endif

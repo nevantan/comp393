@@ -7,7 +7,7 @@ Volume::Volume(vec3 p1, vec3 p2) {
   sides.push_back(Plane(p1, vec2(p2.x - p1.x, p1.y - p2.y), vec3(0, 0, 1))); // Back
   sides.push_back(Plane(vec3(p2.x, p1.y, p1.z), vec2(p2.z - p1.z, p1.y - p2.y), vec3(1, 0, 0))); // Right
   sides.push_back(Plane(vec3(p1.x, p2.y, p1.z), vec2(p2.x - p1.x, p2.z - p1.z), vec3(0, 1, 0))); // Bottom
-  sides.push_back(Plane(p1, vec2(p2.z - p1.z, p1.y - p2.y), vec3(1, 0, 0))); // Left
+  sides.push_back(Plane(p1, vec2(p2.z - p1.z, p1.y - p2.y), vec3(-1, 0, 0))); // Left
   sides.push_back(Plane(vec3(p1.x, p1.y, p2.z), vec2(p2.x - p1.x, p1.y - p2.y), vec3(0, 0, 1))); // Front
 }
 
@@ -20,4 +20,15 @@ vector<GLfloat> Volume::Triangles() {
   }
 
   return vertex;
+}
+
+vector<vec3> Volume::Normals() {
+  vector<vec3> normals;
+
+  for(int i = 0; i < sides.size(); i++) {
+    vector<vec3> norm = sides[i].Normals();
+    normals.insert(normals.end(), norm.begin(), norm.end());
+  }
+
+  return normals;
 }
