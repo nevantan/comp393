@@ -19,6 +19,7 @@ public:
   std::vector<GLfloat> Vertices();
   std::vector<GLfloat> Triangles();
   std::vector<glm::vec3> Normals();
+  std::vector<GLfloat> UVs();
 };
 
 #endif

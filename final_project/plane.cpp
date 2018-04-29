@@ -6,7 +6,7 @@ using namespace glm;
 
 void Plane::init(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, vec3 normal) {
   this->normal = normal;
-  
+
   float nx = abs(normal.x);
 
   vertices.push_back(x); vertices.push_back(y); vertices.push_back(z); // Upper-left
@@ -47,4 +47,15 @@ vector<vec3> Plane::Normals() {
     normals.push_back(normal);
   }
   return normals;
+}
+
+vector<GLfloat> Plane::UVs() {
+  vector<GLfloat> uvs;
+  uvs.push_back(0.0f); uvs.push_back(1.0f); // 0
+  uvs.push_back(1.0f); uvs.push_back(1.0f); // 1
+  uvs.push_back(0.0f); uvs.push_back(0.0f); // 2
+  uvs.push_back(0.0f); uvs.push_back(0.0f); // 2
+  uvs.push_back(1.0f); uvs.push_back(1.0f); // 1
+  uvs.push_back(1.0f); uvs.push_back(0.0f); // 3
+  return uvs;
 }
