@@ -1,5 +1,34 @@
 # Final Programming Project
 
+## Shaders
+
+### Brick Uniforms
+
+**Vertex:**
+
+mat4 Model
+mat4 View
+mat4 Projection
+
+**Fragment:**
+
+Light lights[]:
+
+* vec3 position
+* vec3 ambient
+* vec3 diffuse
+* vec3 specular
+* float constant
+* float linear
+* float quadratic
+
+DirLight dirLight:
+
+* vec3 direction
+* vec3 ambient
+* vec3 diffuse
+* vec3 specular
+
 ## Attribution
 
 Textures used in this project are licenced under CC-BY, see below for individual details.
