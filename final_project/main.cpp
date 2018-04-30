@@ -2,6 +2,7 @@
 #include "shader.h"
 #include "plane.h"
 #include "volume.h"
+#include "texture.h"
 
 #include <iostream>
 #include <vector>
@@ -12,17 +13,69 @@
 using namespace std;
 using namespace glm;
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "lib/stb_image.h"
+
 int width, height;
 GLFWwindow* window;
 GLuint VertexArrayID;
 
+GLuint depthMapFBO;
+const GLuing SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+GLuint depthMap;
+
 GLuint vertexbuffer;
-GLuint colorbuffer;
+GLuint uvbuffer;
 GLuint normalbuffer;
 
 Camera camera;
-Shader basicShader;
 Shader lightingShader;
+Shader brickShader;
+Shader depthShader;
+
+Texture brickDiffuse = Texture("textures/Brickwork_001_Diffuse.png");
+Texture brickSpecular = Texture("textures/Brickwork_001_Specular.png");
+Texture hardwoodDiffuse = Texture("textures/Hardwood_Diffuse.png");
+Texture hardwoodSpecular = Texture("textures/Hardwood_Specular.png");
+
+void initTextures() {
+  if(!brickDiffuse.load()) {
+    cerr << "There was a problem loading the brickwork diffuse texture" << endl;
+    return;
+  }
+
+  if(!brickSpecular.load()) {
+    cerr << "There was a problem loading the brickwork specular texture" << endl;
+    return;
+  }
+
+  if(!hardwoodDiffuse.load()) {
+    cerr << "There was a problem loading the hardwood diffuse texture" << endl;
+    return;
+  }
+
+  if(!hardwoodSpecular.load()) {
+    cerr << "There was a problem loading the hardwood specular texture" << endl;
+    return;
+  }
+}
+
+void initShadows() {
+  // Setup texture
+  glGenTextures(1, &depthMap);
+  glBindTexture(GL_TEXTURE_2D, depthMap);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); 
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE2D, depthMap, 0);
+  glDrawBuffer(GL_NONE);
+  glReadBuffer(GL_NONE);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 
 void initScene() {
   camera = Camera(
@@ -32,21 +85,28 @@ void initScene() {
     vec3(0, 1, 0)  // Up
   );
 
-  // basicShader = Shader("shaders/basic.vert", "shaders/basic.frag");
   lightingShader = Shader("shaders/lighting.vert", "shaders/lighting.frag");
+  brickShader = Shader("shaders/brick.vert", "shaders/brick.frag");
+  depthShader = Shader("shaders/depth.vert", "shaders/depth.frag");
+
+  initTextures();
+  initShadows();
 
   // Room geometry
   Plane backWall = Plane(-4.0f, 6.0f, -4.0f, 8.0f, 6.0f, vec3(0, 0, 1));
   vector<GLfloat> backWallVertices = backWall.Triangles();
   vector<vec3> backWallNormals = backWall.Normals();
+  vector<GLfloat> backWallUVs = backWall.UVs();
 
   Plane sideWall = Plane(4.0f, 6.0f, -4.0f, 8.0f, 6.0f, vec3(-1, 0, 0));
   vector<GLfloat> sideWallVertices = sideWall.Triangles();
   vector<vec3> sideWallNormals = sideWall.Normals();
+  vector<GLfloat> sideWallUVs = sideWall.UVs();
 
   Plane floor = Plane(-4.0f, 0.0f, -4.0f, 8.0f, 8.0f, vec3(0, 1, 0));
   vector<GLfloat> floorVertices = floor.Triangles();
   vector<vec3> floorNormals = floor.Normals();
+  vector<GLfloat> floorUVs = floor.UVs();
 
   Plane window1 = Plane(-1.0f, 4.0f, -3.95f, 2.0f, 2.0f, vec3(0, 0, 1));
   vector<GLfloat> window1Vertices = window1.Triangles();
@@ -112,14 +172,14 @@ void initScene() {
   glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
   glBufferData(GL_ARRAY_BUFFER, g_vertex_buffer_data.size() * sizeof(GLfloat), &g_vertex_buffer_data[0], GL_STATIC_DRAW);
 
-  vector<GLfloat> g_color_buffer_data;
-  for(int i = 0; i < 285*3; i++) {
-    g_color_buffer_data.push_back(0.5f);
-  }
+  vector<GLfloat> g_uv_buffer_data;
+  g_uv_buffer_data.insert(g_uv_buffer_data.end(), backWallUVs.begin(), backWallUVs.end());
+  g_uv_buffer_data.insert(g_uv_buffer_data.end(), sideWallUVs.begin(), sideWallUVs.end());
+  g_uv_buffer_data.insert(g_uv_buffer_data.end(), floorUVs.begin(), floorUVs.end());
 
-  glGenBuffers(1, &colorbuffer);
-  glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-  glBufferData(GL_ARRAY_BUFFER, g_color_buffer_data.size() * sizeof(GLfloat), &g_color_buffer_data[0], GL_STATIC_DRAW);
+  glGenBuffers(1, &uvbuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+  glBufferData(GL_ARRAY_BUFFER, g_uv_buffer_data.size() * sizeof(GLfloat), &g_uv_buffer_data[0], GL_STATIC_DRAW);
 
   // Build normal buffer data
   vector<vec3> normals;
@@ -149,8 +209,7 @@ void initScene() {
   glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(vec3), &normals[0], GL_STATIC_DRAW);
 }
 
-void drawScene() {
-  glUseProgram(lightingShader.Program());
+void setupLightingShaderUniforms() {
   glUniformMatrix4fv(lightingShader.Uniform("Model"), 1, GL_FALSE, &camera.Model()[0][0]);
   glUniformMatrix4fv(lightingShader.Uniform("View"), 1, GL_FALSE, &camera.View()[0][0]);
   glUniformMatrix4fv(lightingShader.Uniform("Projection"), 1, GL_FALSE, &camera.Projection()[0][0]);
@@ -165,20 +224,118 @@ void drawScene() {
   glUniform3f(lightingShader.Uniform("light.ambient"), 0.2f, 0.2f, 0.2f);
   glUniform3f(lightingShader.Uniform("light.diffuse"), 0.5f, 0.5f, 0.5f);
   glUniform3f(lightingShader.Uniform("light.specular"), 1.0f, 1.0f, 1.0f);
+}
+
+void setupPositionalUniforms(Shader shader) {
+  glUniformMatrix4fv(shader.Uniform("Model"), 1, GL_FALSE, &camera.Model()[0][0]);
+  glUniformMatrix4fv(shader.Uniform("View"), 1, GL_FALSE, &camera.View()[0][0]);
+  glUniformMatrix4fv(shader.Uniform("Projection"), 1, GL_FALSE, &camera.Projection()[0][0]);
+
+  glUniform3f(shader.Uniform("CameraPosition"), camera.Position().x, camera.Position().y, camera.Position().z);
+}
+
+void setupLightUniforms(Shader shader) {
+  // Point Light (Candle)
+  glUniform3f(shader.Uniform("lights[0].position"), 1.25f, 2.8f, -1.15f);
+  glUniform3f(shader.Uniform("lights[0].ambient"), 0.2f, 0.2f, 0.2f);
+  glUniform3f(shader.Uniform("lights[0].diffuse"), 0.5f, 0.5f, 0.5f);
+  glUniform3f(shader.Uniform("lights[0].specular"), 1.0f, 1.0f, 1.0f);
+  glUniform1f(shader.Uniform("lights[0].constant"), 1.0f);
+  glUniform1f(shader.Uniform("lights[0].linear"), 0.09f);
+  glUniform1f(shader.Uniform("lights[0].quadratic"), 0.032f);
+
+  // Point Light (Torch)
+  glUniform3f(shader.Uniform("lights[1].position"), 3.95f, 3.5f, 0.0f);
+  glUniform3f(shader.Uniform("lights[1].ambient"), 0.2f, 0.2f, 0.2f);
+  glUniform3f(shader.Uniform("lights[1].diffuse"), 0.5f, 0.5f, 0.5f);
+  glUniform3f(shader.Uniform("lights[1].specular"), 1.0f, 1.0f, 1.0f);
+  glUniform1f(shader.Uniform("lights[1].constant"), 1.0f);
+  glUniform1f(shader.Uniform("lights[1].linear"), 0.09f);
+  glUniform1f(shader.Uniform("lights[1].quadratic"), 0.032f);
+
+  // Directional Light
+  glUniform3f(shader.Uniform("dirLight.direction"), 0.0, 0.0, 1.0);
+  glUniform3f(shader.Uniform("dirLight.ambient"), 0.2f, 0.2f, 0.2f);
+  glUniform3f(shader.Uniform("dirLight.diffuse"), 0.5f, 0.5f, 0.5f);
+  glUniform3f(shader.Uniform("dirLight.specular"), 1.0f, 1.0f, 1.0f);
+}
+
+void setupBrickUniforms() {
+  setupPositionalUniforms(brickShader);
+
+  // Brick Material Info
+  glUniform1i(brickShader.Uniform("material.diffuse"), 0);
+  glUniform1i(brickShader.Uniform("material.specular"), 1);
+  glUniform1f(brickShader.Uniform("material.shininess"), 32.0f);
+
+  setupLightUniforms(brickShader);
+}
+
+void setupHardwoodUniforms() {
+  setupPositionalUniforms(brickShader);
+
+  // Brick Material Info
+  glUniform1i(brickShader.Uniform("material.diffuse"), 2);
+  glUniform1i(brickShader.Uniform("material.specular"), 3);
+  glUniform1f(brickShader.Uniform("material.shininess"), 32.0f);
+
+  setupLightUniforms(brickShader);
+}
+
+void renderShadowMap() {
+  float near_plane = 1.0f;
+  float far_plane = 7.5f;
+  mat4 lightProjection = ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+  mat4 lightView = lookAt(
+    vec3(1.25f, 2.8f, -1.15f), // Light Position
+    vec3(0.0f, 0.0f, 0.0f), // Light Target (Center of Scene)
+    vec3(0.0f, 1.0f, 0.0f) // Up Vector
+  );
+  lightSpaceMatrix = lightProjection * lightView;
+
+  glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+  glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+}
+
+void drawScene() {
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, brickDiffuse.id());
+
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, brickSpecular.id());
+
+  glActiveTexture(GL_TEXTURE2);
+  glBindTexture(GL_TEXTURE_2D, hardwoodDiffuse.id());
+
+  glActiveTexture(GL_TEXTURE3);
+  glBindTexture(GL_TEXTURE_2D, hardwoodSpecular.id());
 
   glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
   glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
   glEnableVertexAttribArray(2);
     glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
-    glDrawArrays(GL_TRIANGLES, 0, 285);
+    renderShadowMap();
+
+    glUseProgram(brickShader.Program());
+    setupBrickUniforms();
+    glDrawArrays(GL_TRIANGLES, 0, 12);
+
+    setupHardwoodUniforms();
+    glDrawArrays(GL_TRIANGLES, 12, 6);
+
+    glUseProgram(lightingShader.Program());
+    setupLightingShaderUniforms();
+    glDrawArrays(GL_TRIANGLES, 18, 267);
   glDisableVertexAttribArray(0);
   glDisableVertexAttribArray(1);
   glDisableVertexAttribArray(2);
@@ -228,6 +385,8 @@ int main() {
 
   glGenVertexArrays(1, &VertexArrayID);
   glBindVertexArray(VertexArrayID);
+
+  glGenFramebuffers(1, &depthMapFBO);
 
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
