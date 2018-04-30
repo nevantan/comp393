@@ -31,13 +31,16 @@ GLuint normalbuffer;
 Camera camera;
 Shader lightingShader;
 Shader brickShader;
+Shader woodShader;
 Shader depthShader;
 Shader shadowTestShader;
 
 Texture brickDiffuse = Texture("textures/Brickwork_001_Diffuse.png");
 Texture brickSpecular = Texture("textures/Brickwork_001_Specular.png");
+Texture brickNormal = Texture("textures/Brickwork_001_Normal.png");
 Texture hardwoodDiffuse = Texture("textures/Hardwood_Diffuse.png");
 Texture hardwoodSpecular = Texture("textures/Hardwood_Specular.png");
+Texture hardwoodNormal = Texture("textures/Hardwood_Normal.png");
 
 void initTextures() {
   if(!brickDiffuse.load()) {
@@ -50,6 +53,11 @@ void initTextures() {
     return;
   }
 
+  if(!brickNormal.load()) {
+    cerr << "There was a problem loading the brickwork normal texture" << endl;
+    return;
+  }
+
   if(!hardwoodDiffuse.load()) {
     cerr << "There was a problem loading the hardwood diffuse texture" << endl;
     return;
@@ -57,6 +65,11 @@ void initTextures() {
 
   if(!hardwoodSpecular.load()) {
     cerr << "There was a problem loading the hardwood specular texture" << endl;
+    return;
+  }
+
+  if(!hardwoodNormal.load()) {
+    cerr << "There was a problem loading the hardwood normal texture" << endl;
     return;
   }
 }
@@ -67,8 +80,10 @@ void initShadows() {
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  GLfloat borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+  glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
   glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
@@ -87,6 +102,7 @@ void initScene() {
 
   lightingShader = Shader("shaders/lighting.vert", "shaders/lighting.frag");
   brickShader = Shader("shaders/brick.vert", "shaders/brick.frag");
+  woodShader = Shader("shaders/wood.vert", "shaders/wood.frag");
   depthShader = Shader("shaders/depth.vert", "shaders/depth.frag");
   shadowTestShader = Shader("shaders/shadow_test.vert", "shaders/shadow_test.frag");
 
@@ -134,7 +150,7 @@ void initScene() {
   vector<GLfloat> leg3Vertices = leg3.Triangles();
   vector<vec3> leg3Normals = leg3.Normals();
 
-  Volume leg4 = Volume(vec3(1.9, 2.15, 1.9), vec3(1.8, 0.0, 1.8));
+  Volume leg4 = Volume(vec3(1.8, 2.15, 1.8), vec3(1.9, 0.0, 1.9));
   vector<GLfloat> leg4Vertices = leg4.Triangles();
   vector<vec3> leg4Normals = leg4.Normals();
 
@@ -236,9 +252,9 @@ void setupPositionalUniforms(Shader shader) {
 }
 
 mat4 shadowMatrix() {
-  mat4 projection = ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 7.5f);
+  mat4 projection = ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 7.5f);
   mat4 view = lookAt(
-    vec3(0.0f, 3.5f, -4.0f), // Light Pos
+    vec3(1.25f, 2.8f, -1.15f), // Light Pos
     vec3(0.0f, 0.0f, 0.0f), // Target (center)
     vec3(0.0f, 1.0f, 0.0f)
   );
@@ -272,7 +288,7 @@ void setupLightUniforms(Shader shader) {
 
   // Shadow Map
   glUniformMatrix4fv(shader.Uniform("shadowMatrix"), 1, GL_FALSE, &shadowMatrix()[0][0]);
-  glUniform1i(shader.Uniform("shadowMap"), 4);
+  glUniform1i(shader.Uniform("shadowMap"), 6);
 }
 
 void setupBrickUniforms() {
@@ -281,6 +297,7 @@ void setupBrickUniforms() {
   // Brick Material Info
   glUniform1i(brickShader.Uniform("material.diffuse"), 0);
   glUniform1i(brickShader.Uniform("material.specular"), 1);
+  glUniform1i(brickShader.Uniform("material.normal"), 2);
   glUniform1f(brickShader.Uniform("material.shininess"), 32.0f);
 
   setupLightUniforms(brickShader);
@@ -290,8 +307,9 @@ void setupHardwoodUniforms() {
   setupPositionalUniforms(brickShader);
 
   // Brick Material Info
-  glUniform1i(brickShader.Uniform("material.diffuse"), 2);
-  glUniform1i(brickShader.Uniform("material.specular"), 3);
+  glUniform1i(brickShader.Uniform("material.diffuse"), 3);
+  glUniform1i(brickShader.Uniform("material.specular"), 4);
+  glUniform1i(brickShader.Uniform("material.normal"), 5);
   glUniform1f(brickShader.Uniform("material.shininess"), 32.0f);
 
   setupLightUniforms(brickShader);
@@ -317,10 +335,16 @@ void drawScene() {
   glBindTexture(GL_TEXTURE_2D, brickSpecular.id());
 
   glActiveTexture(GL_TEXTURE2);
-  glBindTexture(GL_TEXTURE_2D, hardwoodDiffuse.id());
+  glBindTexture(GL_TEXTURE_2D, brickNormal.id());
 
   glActiveTexture(GL_TEXTURE3);
+  glBindTexture(GL_TEXTURE_2D, hardwoodDiffuse.id());
+
+  glActiveTexture(GL_TEXTURE4);
   glBindTexture(GL_TEXTURE_2D, hardwoodSpecular.id());
+
+  glActiveTexture(GL_TEXTURE5);
+  glBindTexture(GL_TEXTURE_2D, hardwoodNormal.id());
 
   glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
@@ -334,11 +358,11 @@ void drawScene() {
     glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
-    glCullFace(GL_FRONT);
+    // glCullFace(GL_FRONT);
     renderShadowMap();
-    glCullFace(GL_BACK);
+    // glCullFace(GL_BACK);
 
-    glActiveTexture(GL_TEXTURE4);
+    glActiveTexture(GL_TEXTURE6);
     glBindTexture(GL_TEXTURE_2D, depthMap);
 
     glViewport(0, 0, width, height);
@@ -409,8 +433,10 @@ int main() {
 
   glGenFramebuffers(1, &depthMapFBO);
 
+  glEnable(GL_CULL_FACE);
+  glFrontFace(GL_CW);
   glEnable(GL_DEPTH_TEST);
-  //glDepthFunc(GL_LESS);
+  glDepthFunc(GL_LESS);
 
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
