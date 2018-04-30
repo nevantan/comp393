@@ -22,6 +22,31 @@ Shader::Shader(string vert, string frag) {
   glLinkProgram(progID);
 }
 
+Shader::Shader(string vert, string geometry, string frag) {
+  vertShader = glCreateShader(GL_VERTEX_SHADER);
+  geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
+  fragShader = glCreateShader(GL_FRAGMENT_SHADER);
+
+  string vertShaderStr = readFile(vert);
+  string geometryShaderStr = readFile(geometry);
+  string fragShaderStr = readFile(frag);
+
+  compileShader(vertShader, vertShaderStr.c_str());
+  verifyShader(vertShader);
+
+  compileShader(geometryShader, geometryShaderStr.c_str());
+  verifyShader(geometryShader);
+
+  compileShader(fragShader, fragShaderStr.c_str());
+  verifyShader(fragShader);
+
+  progID = glCreateProgram();
+  glAttachShader(progID, vertShader);
+  glAttachShader(progID, geometryShader);
+  glAttachShader(progID, fragShader);
+  glLinkProgram(progID);
+}
+
 GLuint Shader::Program() {
   return progID;
 }

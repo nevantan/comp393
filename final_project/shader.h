@@ -10,6 +10,7 @@
 
 class Shader {
   GLuint vertShader;
+  GLuint geometryShader;
   GLuint fragShader;
   GLuint progID;
   GLint result;
@@ -23,6 +24,7 @@ class Shader {
   public:
     Shader();
     Shader(std::string vert, std::string frag);
+    Shader(std::string vert, std::string geometry, std::string frag);
     ~Shader();
     GLuint Program();
     GLuint Uniform(std::string name);

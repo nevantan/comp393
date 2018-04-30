@@ -29,6 +29,16 @@ DirLight dirLight:
 * vec3 diffuse
 * vec3 specular
 
+vec3 CameraPosition
+
+Material material:
+
+* sampler2D diffuse
+* sampler2D specular
+* float shininess
+
+sampler2D shadowMap
+
 ## Attribution
 
 Textures used in this project are licenced under CC-BY, see below for individual details.

@@ -21,7 +21,7 @@ GLFWwindow* window;
 GLuint VertexArrayID;
 
 GLuint depthMapFBO;
-const GLuing SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+const GLuint SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
 GLuint depthMap;
 
 GLuint vertexbuffer;
@@ -32,6 +32,7 @@ Camera camera;
 Shader lightingShader;
 Shader brickShader;
 Shader depthShader;
+Shader shadowTestShader;
 
 Texture brickDiffuse = Texture("textures/Brickwork_001_Diffuse.png");
 Texture brickSpecular = Texture("textures/Brickwork_001_Specular.png");
@@ -61,20 +62,19 @@ void initTextures() {
 }
 
 void initShadows() {
-  // Setup texture
   glGenTextures(1, &depthMap);
   glBindTexture(GL_TEXTURE_2D, depthMap);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); 
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
   glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE2D, depthMap, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
   glDrawBuffer(GL_NONE);
   glReadBuffer(GL_NONE);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0); 
 }
 
 void initScene() {
@@ -88,6 +88,7 @@ void initScene() {
   lightingShader = Shader("shaders/lighting.vert", "shaders/lighting.frag");
   brickShader = Shader("shaders/brick.vert", "shaders/brick.frag");
   depthShader = Shader("shaders/depth.vert", "shaders/depth.frag");
+  shadowTestShader = Shader("shaders/shadow_test.vert", "shaders/shadow_test.frag");
 
   initTextures();
   initShadows();
@@ -234,6 +235,16 @@ void setupPositionalUniforms(Shader shader) {
   glUniform3f(shader.Uniform("CameraPosition"), camera.Position().x, camera.Position().y, camera.Position().z);
 }
 
+mat4 shadowMatrix() {
+  mat4 projection = ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 7.5f);
+  mat4 view = lookAt(
+    vec3(0.0f, 3.5f, -4.0f), // Light Pos
+    vec3(0.0f, 0.0f, 0.0f), // Target (center)
+    vec3(0.0f, 1.0f, 0.0f)
+  );
+  return projection * view;
+}
+
 void setupLightUniforms(Shader shader) {
   // Point Light (Candle)
   glUniform3f(shader.Uniform("lights[0].position"), 1.25f, 2.8f, -1.15f);
@@ -258,6 +269,10 @@ void setupLightUniforms(Shader shader) {
   glUniform3f(shader.Uniform("dirLight.ambient"), 0.2f, 0.2f, 0.2f);
   glUniform3f(shader.Uniform("dirLight.diffuse"), 0.5f, 0.5f, 0.5f);
   glUniform3f(shader.Uniform("dirLight.specular"), 1.0f, 1.0f, 1.0f);
+
+  // Shadow Map
+  glUniformMatrix4fv(shader.Uniform("shadowMatrix"), 1, GL_FALSE, &shadowMatrix()[0][0]);
+  glUniform1i(shader.Uniform("shadowMap"), 4);
 }
 
 void setupBrickUniforms() {
@@ -283,20 +298,15 @@ void setupHardwoodUniforms() {
 }
 
 void renderShadowMap() {
-  float near_plane = 1.0f;
-  float far_plane = 7.5f;
-  mat4 lightProjection = ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-  mat4 lightView = lookAt(
-    vec3(1.25f, 2.8f, -1.15f), // Light Position
-    vec3(0.0f, 0.0f, 0.0f), // Light Target (Center of Scene)
-    vec3(0.0f, 1.0f, 0.0f) // Up Vector
-  );
-  lightSpaceMatrix = lightProjection * lightView;
+  glUseProgram(depthShader.Program());
+  glUniformMatrix4fv(depthShader.Uniform("shadowMatrix"), 1, GL_FALSE, &shadowMatrix()[0][0]);
+  glUniformMatrix4fv(depthShader.Uniform("model"), 1, GL_FALSE, &camera.Model()[0][0]);
 
   glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
   glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
     glClear(GL_DEPTH_BUFFER_BIT);
-
+    glDrawArrays(GL_TRIANGLES, 0, 285);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void drawScene() {
@@ -324,13 +334,24 @@ void drawScene() {
     glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
+    glCullFace(GL_FRONT);
     renderShadowMap();
+    glCullFace(GL_BACK);
+
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
+
+    glViewport(0, 0, width, height);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(brickShader.Program());
     setupBrickUniforms();
     glDrawArrays(GL_TRIANGLES, 0, 12);
 
     setupHardwoodUniforms();
+    // glUseProgram(shadowTestShader.Program());
+    // glUniformMatrix4fv(shadowTestShader.Uniform("MVP"), 1, GL_FALSE, &camera.MVP()[0][0]);
+    // glUniform1i(shadowTestShader.Uniform("depthMap"), 4);
     glDrawArrays(GL_TRIANGLES, 12, 6);
 
     glUseProgram(lightingShader.Program());
@@ -389,7 +410,7 @@ int main() {
   glGenFramebuffers(1, &depthMapFBO);
 
   glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS);
+  //glDepthFunc(GL_LESS);
 
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
