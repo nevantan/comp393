@@ -5,6 +5,7 @@ struct Material {
   sampler2D specular;
   sampler2D normal;
   float shininess;
+  float scale;
 };
 
 struct Light {
@@ -61,7 +62,7 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir) {
   vec3 lightDir = normalize(-light.direction);
   
   // Diffuse
-  float diff = max(dot(normalize(texture(material.normal, TexCoords*2).rgb), lightDir), 0.0);
+  float diff = max(dot(normalize(texture(material.normal, TexCoords * material.scale).rgb), lightDir), 0.0);
 
   // Specular
   vec3 reflectDir = reflect(-lightDir, normal);
@@ -71,9 +72,9 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir) {
   float shadow = 1.0 - ShadowCalculation(FragPosition_LightSpace);
 
   // Calculate components
-  vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords*2));
-  vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords*2)) * shadow;
-  vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords*2)) * shadow;
+  vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords * material.scale));
+  vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords * material.scale)) * shadow;
+  vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords * material.scale)) * shadow;
 
   // Return combined components from this light source
   return ambient + diffuse + specular;
@@ -83,7 +84,7 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir) {
   vec3 lightDir = normalize(light.position - fragPos);
 
   // Diffuse
-  float diff = max(dot(normalize(texture(material.normal, TexCoords*2).rgb * 2.0), lightDir), 0.0);
+  float diff = max(dot(normalize(texture(material.normal, TexCoords * material.scale).rgb * 2.0), lightDir), 0.0);
 
   // Specular
   vec3 reflectDir = reflect(-lightDir, normal);
@@ -97,9 +98,9 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir) {
   float shadow = 1.0 - ShadowCalculation(FragPosition_LightSpace);
 
   // Calculate components
-  vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords*2.0)) * attenuation;
-  vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords*2.0)) * attenuation * shadow;
-  vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords*2.0)) * attenuation * shadow;
+  vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords * material.scale)) * attenuation;
+  vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords * material.scale)) * attenuation * shadow;
+  vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords * material.scale)) * attenuation * shadow;
 
   // Return combined components from this light source
   return ambient + diffuse + specular;
